@@ -21,10 +21,9 @@ from acceleration.ebpf.xdp_engine import create_xdp_engine
 from system.ml_core import (
     TrafficProfiler, TrafficPattern,
     AdaptivePolicyEngine, PolicyAction,
-    DeepTrafficClassifier
+    DeepTrafficClassifier,
+    RLPolicyOptimizer, RLState, PolicyAdjustment
 )
-from modules.ids_ips.engine.anomaly_detector import AnomalyDetector
-from modules.predictive_ai.engine.reinforcement_learning import RLPolicyOptimizer, RLState, PolicyAdjustment
 
 # Advanced AI Layers
 from modules.predictive_ai.engine.predictive import AttackForecaster, TrendAnalyzer

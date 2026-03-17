@@ -245,7 +245,7 @@ async def start_gnn_training(request: TrainRequest, token: dict = Depends(requir
 
     cfg = _get_waf_settings()
     logs_path  = cfg.gnn.logs_path or "modules/waf/ml_training/waf_gnn/datasets/session_logs.csv"
-    output_dir = os.path.dirname(cfg.gnn.model_path or "modules/waf/ml_training/waf_gnn/gnn_model.pt")
+    output_dir = os.path.dirname(cfg.gnn.model_path or "ml/models/waf/gnn_model.pt")
 
     job = GNNTrainingJob(
         logs_path   = logs_path,
