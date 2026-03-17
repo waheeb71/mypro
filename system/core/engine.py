@@ -26,7 +26,7 @@ from system.ml_core import (
 )
 
 # Advanced AI Layers
-from modules.predictive_ai.engine.predictive import AttackForecaster, TrendAnalyzer
+from modules.predictive_ai.engine.predictive import AttackForecaster
 from modules.predictive_ai.engine.vulnerability_scorer import VulnerabilityPredictor
 from modules.uba.engine.user_behavior import UserBehaviorAnalytics
 from system.response import MitigationOrchestrator, RecoveryManager, MitigationAction, HealthStatus
