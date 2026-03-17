@@ -1,0 +1,18 @@
+"""
+Enterprise NGFW - Sandbox Integration
+
+File analysis via VirusTotal and Cuckoo Sandbox.
+"""
+
+from .sandbox_analyzer import (
+    SandboxAnalyzer,
+    SandboxVerdict,
+    VerdictCache,
+    VirusTotalBackend,
+    CuckooBackend
+)
+
+__all__ = [
+    'SandboxAnalyzer', 'SandboxVerdict', 'VerdictCache',
+    'VirusTotalBackend', 'CuckooBackend'
+]

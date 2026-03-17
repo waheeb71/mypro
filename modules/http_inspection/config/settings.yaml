@@ -1,0 +1,3 @@
+http_inspection:
+  enabled: true
+  mode: "monitor"

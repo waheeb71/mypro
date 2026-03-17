@@ -1,0 +1,198 @@
+# ═══════════════════════════════════════════════════════════════════
+#  Enterprise NGFW — AI Email Security Configuration
+#  File: config/defaults/email.yaml
+#
+#  تحكم كامل في كل ميزة من ميزات فحص البريد الإلكتروني
+#  يمكن وضع API Keys في: config/email.local.yaml  (مستبعد من git)
+# ═══════════════════════════════════════════════════════════════════
+
+email_security:
+  # ─────────────────────────────────────────
+  # 🔴 MASTER SWITCH — تفعيل/إلغاء الفحص كاملاً
+  # ─────────────────────────────────────────
+  enabled: true
+
+  # وضع العمل:
+  #   enforce  → يحجب الرسائل الخطرة
+  #   monitor  → يسجل فقط ولا يحجب (shadow mode)
+  mode: enforce
+
+  # المنافذ التي يراقبها المحرك
+  monitored_ports:
+    - 25     # SMTP (نقل البريد بين السيرفرات)
+    - 587    # SMTP Submission (إرسال المستخدم)
+    - 465    # SMTPS (مشفر)
+    - 143    # IMAP
+    - 993    # IMAPS (مشفر)
+    - 110    # POP3
+    - 995    # POP3S (مشفر)
+
+  # ─────────────────────────────────────────
+  # 1️⃣ Email Preprocessor
+  #    فك تشفير MIME وتقطيع المحتوى
+  # ─────────────────────────────────────────
+  preprocessing:
+    enabled: true
+    decode_base64_body: true     # فك تشفير النص المشفر بـ Base64
+    decode_quoted_printable: true
+    extract_plain_text: true     # تحويل HTML إلى نص للتحليل
+    max_body_bytes: 524288       # 512KB حد فحص الجسم
+
+  # ─────────────────────────────────────────
+  # 2️⃣ Phishing Detector
+  #    كشف التصيد الاحتيالي بالذكاء الاصطناعي
+  # ─────────────────────────────────────────
+  phishing_detection:
+    enabled: true
+    # الحد الأدنى لعدد الكلمات المريبة قبل اعتبارها تصيداً
+    keyword_threshold: 2
+    # استخدام نموذج NLP (نفس نموذج WAF مدرَّب على بيانات بريد)
+    nlp_enabled: false             # ⚠️ يحتاج نموذج مدرَّب على بيانات email
+    nlp_model_path: "ml/training/email_nlp/email_phishing_model.pt"
+    weight: 0.35
+
+    # كلمات تصيد مخصصة (إضافية)
+    custom_keywords: []
+
+  # ─────────────────────────────────────────
+  # 3️⃣ URL Scanner
+  #    فحص روابط داخل البريد
+  # ─────────────────────────────────────────
+  url_scanner:
+    enabled: true
+    # الحد الأقصى للروابط في رسالة واحدة
+    max_urls_per_email: 10
+    # تفعيل فحص السمعة عبر Threat Intel للنطاقات
+    reputation_check: true
+    # كشف روابط إعادة التوجيه المخفية (Redirect Chains)
+    detect_redirects: true
+    weight: 0.25
+
+    # نطاقات موثوقة تُعفى من الفحص
+    trusted_domains:
+      - "google.com"
+      - "microsoft.com"
+      - "github.com"
+      - "linkedin.com"
+
+  # ─────────────────────────────────────────
+  # 4️⃣ Attachment Guard
+  #    حماية متقدمة من المرفقات الخطرة
+  # ─────────────────────────────────────────
+  attachment_guard:
+    enabled: true
+    max_attachment_size_mb: 25
+    # حجب الامتدادات الخطرة فوراً
+    block_dangerous_extensions: true
+    # فحص Entropy للمرفقات (قيمة عالية = محتوى مشفر مريب)
+    entropy_analysis: true
+    entropy_threshold: 0.92      # فوق هذه القيمة = مريب جداً
+    weight: 0.20
+
+    # امتدادات خطرة (تُحجب فوراً)
+    dangerous_extensions:
+      - .exe
+      - .scr
+      - .bat
+      - .cmd
+      - .com
+      - .pif
+      - .vbs
+      - .js
+      - .jar
+      - .msi
+      - .dll
+      - .ps1
+      - .psm1
+      - .hta
+      - .lnk
+      - .reg
+      - .inf
+
+    # امتدادات مريبة (تزيد الـ risk score ولا تحجب فوراً)
+    suspicious_extensions:
+      - .docm    # Word ممكّن للـ Macros
+      - .xlsm    # Excel ممكّن للـ Macros
+      - .pptm
+      - .zip
+      - .rar
+      - .7z
+      - .iso
+      - .img
+
+  # ─────────────────────────────────────────
+  # 5️⃣ Sender Reputation
+  #    التحقق من هوية المرسل
+  # ─────────────────────────────────────────
+  sender_reputation:
+    enabled: true
+    weight: 0.15
+
+    # التحقق من سجلات DNS (SPF, DKIM, DMARC)
+    spf_check: true
+    dkim_check: true             # يحتاج استخراج public key من DNS
+    dmarc_check: true
+
+    # قائمة النطاقات المريبة المؤقتة (Disposable Email)
+    block_disposable_domains: true
+    # نطاقات مريبة مخصصة إضافية
+    custom_suspicious_domains: []
+
+    # تكامل مع Threat Intelligence للتحقق من IP المرسل
+    ip_reputation_check: true
+
+  # ─────────────────────────────────────────
+  # 6️⃣ Spam Filter
+  #    تصفية الرسائل المزعجة
+  # ─────────────────────────────────────────
+  spam_filter:
+    enabled: true
+    weight: 0.05
+    # العتبة لاعتبار الرسالة Spam (0.0 - 1.0)
+    spam_threshold: 0.70
+    # عدد الكلمات المريبة
+    keyword_threshold: 3
+
+  # ─────────────────────────────────────────
+  # 7️⃣ SMTP Command Inspection
+  #    فحص أوامر SMTP المريبة
+  # ─────────────────────────────────────────
+  smtp_commands:
+    enabled: true
+    # الأوامر المشبوهة التي تُعطى تحذيراً
+    suspicious_commands:
+      - VRFY      # التحقق من وجود مستخدم
+      - EXPN      # استعراض قائمة مجموعة
+      - DEBUG
+    weight: 0.05  # وزن منخفض — أوامر مريبة لكن ليست قاطعة
+
+  # ─────────────────────────────────────────
+  # ⚙️ Risk Scoring Engine
+  #    عتبات القرار
+  # ─────────────────────────────────────────
+  risk_scoring:
+    thresholds:
+      allow:       0.25     # < 0.25 → إرسال عادي
+      quarantine:  0.55     # 0.25-0.55 → عزل في مجلد Spam
+      block:       0.80     # >= 0.80 → حجب كامل (REJECT)
+
+  # ─────────────────────────────────────────
+  # 📝 Logging
+  # ─────────────────────────────────────────
+  logging:
+    enabled: true
+    log_blocked:     true
+    log_quarantined: true
+    log_allowed:     false
+    log_file: "/var/log/ngfw/email_security.log"
+    # هل تُحفظ نسخة من محتوى الرسائل المريبة؟
+    save_suspicious_content: false   # ⚠️ انتبه للخصوصية
+
+  # ─────────────────────────────────────────
+  # 🔑 Whitelist — مرسلون موثوقون يتجاوزون الفحص
+  # ─────────────────────────────────────────
+  whitelist:
+    enabled: true
+    emails: []
+    domains: []
+    ips: []

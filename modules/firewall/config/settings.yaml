@@ -1,0 +1,3 @@
+firewall:
+  enabled: true
+  mode: "monitor"

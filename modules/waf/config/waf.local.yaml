@@ -1,0 +1,23 @@
+# ═══════════════════════════════════════════════════════════════════
+#  Enterprise NGFW — AI-WAF Local Overrides
+#  File: config/waf.local.yaml
+#
+#  هذا الملف مخصص للإعدادات المحلية والمفاتيح السرية (API Keys).
+#  يتم دمج هذه الإعدادات مع config/defaults/waf.yaml وتأخذ الأولوية.
+#  🚫 تحذير: لا تقم برفع هذا الملف إلى git (مضاف تلقائياً لـ .gitignore).
+# ═══════════════════════════════════════════════════════════════════
+
+waf:
+  threat_intelligence:
+    abuseipdb:
+      # ضع مفتاح API الخاص بك من AbuseIPDB هنا
+      api_key: "YOUR_KEY_HERE"
+
+    alienvault_otx:
+      # ضع مفتاح API الخاص بك من AlienVault OTX هنا
+      api_key: ""
+
+  # يمكنك أيضاً تجاوز أي إعدادات أخرى هنا للاختبار المحلي
+  # مثال: تعطيل الحجب وتفعيل المراقبة فقط
+  # mode: monitor
+  # enabled: true

@@ -1,0 +1,219 @@
+# ═══════════════════════════════════════════════════════════════════
+#  Enterprise NGFW — AI-WAF Configuration
+#  File: config/defaults/waf.yaml
+#
+#  يمكن تفعيل أو إلغاء تفعيل WAF بالكامل أو كل ميزة على حدة
+#  All settings can be overridden per-deployment in:
+#    config/waf.local.yaml  (لا يُرفع لـ git)
+# ═══════════════════════════════════════════════════════════════════
+
+waf:
+  # ─────────────────────────────────────────
+  # 🔴 MASTER SWITCH — تفعيل/إلغاء WAF كاملاً
+  # false = WAF معطّل تماماً، كل الحركة تمر بدون فحص
+  # ─────────────────────────────────────────
+  enabled: true
+
+  # وضع العمل:
+  #   enforce  → يحجب الهجمات (الوضع الافتراضي)
+  #   monitor  → يسجّل فقط ولا يحجب (shadow mode للاختبار)
+  #   learning → يجمع بيانات للتدريب بدون حجب
+  mode: enforce
+
+  # المنافذ التي يراقبها WAF
+  monitored_ports:
+    - 80
+    - 443
+    - 8080
+    - 8443
+    - 3000
+    - 8000
+
+  # ─────────────────────────────────────────
+  # 1️⃣ Preprocessing Engine
+  #    فك التشفير متعدد الطبقات (URL, Base64, Hex, HTML, Unicode)
+  # ─────────────────────────────────────────
+  preprocessing:
+    enabled: true
+    max_decode_iterations: 6    # كم مرة يكرر التفكيك (يمنع infinite loops)
+    decoders:
+      url_decode:       true    # %3C → <
+      html_entity:      true    # &lt; → <
+      hex_decode:       true    # \x41 / 0x41 → A
+      base64_detect:    true    # كشف وفك Base64 المضمّن
+      unicode_normalize: true   # Fullwidth chars → ASCII
+      sql_comment_strip: true   # إزالة /**/ و -- و #
+      xml_json_flatten:  true   # استخراج النص من XML/JSON
+
+  # ─────────────────────────────────────────
+  # 2️⃣ Feature Extractor
+  #    استخراج الميزات الرقمية من الـ payload
+  # ─────────────────────────────────────────
+  feature_extraction:
+    enabled: true
+
+  # ─────────────────────────────────────────
+  # 3️⃣ NLP Attack Detection
+  #    نموذج 1D-CNN + BiLSTM لكشف هجمات HTTP
+  # ─────────────────────────────────────────
+  nlp_model:
+    enabled: true
+    model_path: "ml/training/waf_nlp/waf_nlp_model.pt"
+    # الحد الأدنى للثقة لاعتبار الطلب هجوماً
+    detection_threshold: 0.60
+    # وزن هذا النموذج في حساب Risk Score
+    weight: 0.35
+
+  # ─────────────────────────────────────────
+  # 4️⃣ Bot Detection
+  #    XGBoost لكشف Bots والـ Headless Browsers
+  # ─────────────────────────────────────────
+  bot_detection:
+    enabled: true
+    model_path: "ml/training/bot_detection/bot_model.json"
+    detection_threshold: 0.65
+    weight: 0.20
+    # هل يُحجب البوت أم يُتحدّى فقط؟
+    bot_action: challenge    # challenge | block
+
+  # ─────────────────────────────────────────
+  # 5️⃣ Graph Neural Network (GNN)
+  #    كشف الهجمات متعددة الخطوات (lateral movement)
+  # ─────────────────────────────────────────
+  gnn_model:
+    enabled: false            # ⚠️ معطّل افتراضياً — يحتاج torch-geometric
+    model_path: "modules/waf/ml_training/waf_gnn/gnn_model.pt"
+    detection_threshold: 0.70
+    weight: 0.10
+    # حجم نافذة الـ Session لبناء الـ Graph
+    session_window_requests: 50
+    # ── جمع سجلات الجلسات (لتدريب GNN مستقبلاً) ──────────────────
+    # log_sessions: true  → يسجل كل طلب HTTP مار عبر الـ WAF تلقائياً
+    # log_sessions: false → لا يجمع بيانات (وضع الخصوصية الكاملة)
+    log_sessions: true
+    # مسار ملف CSV الذي سيتم تخزين السجلات فيه
+    logs_path: "modules/waf/ml_training/waf_gnn/datasets/session_logs.csv"
+    # الحد الأقصى للسجلات في الذاكرة قبل الكتابة للقرص
+    max_log_records: 500000
+
+  # ─────────────────────────────────────────
+  # 6️⃣ Behavioral Anomaly (Heuristic Fallback)
+  #    تحليل سلوكي داخلي بدون نموذج خارجي
+  # ─────────────────────────────────────────
+  anomaly_detection:
+    enabled: true
+    # هذا يستخدم قواعد إحصائية داخلية + AnomalyDetector الموجود
+    weight: 0.25
+
+  # ─────────────────────────────────────────
+  # 7️⃣ Threat Intelligence
+  #    IP Reputation من مصادر خارجية
+  # ─────────────────────────────────────────
+  threat_intelligence:
+    enabled: true
+    weight: 0.15
+    cache_ttl_seconds: 21600    # 6 ساعات
+
+    abuseipdb:
+      enabled: true
+      api_key: ""               # ضع مفتاحك هنا أو في .env
+      max_age_days: 30
+
+    alienvault_otx:
+      enabled: false
+      api_key: ""               # ضع مفتاحك هنا
+
+    spamhaus:
+      enabled: true             # DNS-based — لا يحتاج API key
+      zones:
+        - zen.spamhaus.org      # SBL + XBL + PBL
+
+    feodo_tracker:
+      enabled: true             # Botnet C2 blocklist
+      # يُحدَّث تلقائياً كل ساعة في الخلفية
+      update_interval_hours: 6
+
+  # ─────────────────────────────────────────
+  # 8️⃣ Honeypot Layer
+  #    صفحات وهمية لكشف المهاجمين فوراً
+  # ─────────────────────────────────────────
+  honeypot:
+    enabled: true
+    # score_boost: كم يُضاف لدرجة الخطر عند اكتشاف Honeypot (0.0 - 1.0)
+    score_boost: 0.50
+    # مدة الـ Blacklist بعد تفعيل Honeypot (بالثواني)
+    blacklist_ttl_seconds: 86400    # 24 ساعة
+    # يمكن إضافة مسارات إضافية خاصة بموقعك
+    custom_paths:
+      - "/api/v0/internal"
+      - "/debug_console"
+
+  # ─────────────────────────────────────────
+  # 9️⃣ Risk Scoring Engine
+  #    تجميع نتائج النماذج في درجة خطر واحدة
+  # ─────────────────────────────────────────
+  risk_scoring:
+    enabled: true
+    # عتبات قرار الحجب
+    thresholds:
+      allow:       0.30         # < 0.30 → ALLOW
+      challenge:   0.60         # 0.30-0.60 → CAPTCHA/Rate-limit
+      soft_block:  0.80         # 0.60-0.80 → HTTP 429
+      block:       0.80         # >= 0.80 → HTTP 403 + Blacklist
+
+  # ─────────────────────────────────────────
+  # 🔟 Self-Learning Logger
+  #    تسجيل البيانات للتدريب الأسبوعي
+  # ─────────────────────────────────────────
+  self_learning:
+    enabled: true
+    # تخزين الطلبات المحظورة والمشبوهة في قاعدة البيانات
+    log_blocked:    true
+    log_challenged: true
+    log_allowed:    false       # لا تسجّل الطلبات العادية (لتوفير المساحة)
+    # الحد الأقصى للسجلات قبل الضغط
+    max_records: 100000
+
+  # ─────────────────────────────────────────
+  # ⚙️ إعدادات الأداء
+  # ─────────────────────────────────────────
+  performance:
+    # إذا تجاوز الوقت المحدد (ms)، يُسمح بالطلب تلقائياً (fail-open)
+    max_inspection_time_ms: 50
+    # fail_open: true  → إذا تعطّل WAF يسمح بالحركة (أقل أمناً، أكثر توافراً)
+    # fail_open: false → إذا تعطّل WAF يحجب الكل (أكثر أمناً)
+    fail_open: true
+    # حجم الـ payload الأقصى للفحص (bytes) — ما فوقه يُقطع عند هذا الحد
+    max_payload_inspect_bytes: 65536
+
+  # ─────────────────────────────────────────
+  # 🔑 Whitelist — IPs / CIDRs تتجاوز الفحص
+  # ─────────────────────────────────────────
+  whitelist:
+    enabled: true
+    ips:
+      - "127.0.0.1"
+      - "::1"
+    cidrs:
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+      - "192.168.0.0/16"
+
+  # ─────────────────────────────────────────
+  # 🚫 Blacklist — IPs / CIDRs تُحجب فوراً
+  # ─────────────────────────────────────────
+  blacklist:
+    enabled: true
+    ips: []
+    cidrs: []
+
+  # ─────────────────────────────────────────
+  # 📝 WAF Logging
+  # ─────────────────────────────────────────
+  logging:
+    enabled: true
+    log_blocked:    true
+    log_challenged: true
+    log_allowed:    false
+    include_payload: false      # ⚠️ احذر — قد يحتوي على بيانات حساسة
+    log_file: "/var/log/ngfw/waf.log"

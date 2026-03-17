@@ -1,0 +1,160 @@
+# UBA — Intelligent User Behavior Analytics
+
+> **Context:** The UBA module is currently a near-empty stub (91-line engine, no DB models, no real API). The system already has a mature [AnomalyDetector](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/ids_ips/engine/anomaly_detector.py#48-243) in IDS/IPS with Isolation Forest, ONNX, and sklearn support. Industry research confirms that 2024-grade UEBA requires behavioral baselines + dynamic risk scoring + multi-source correlation.
+
+---
+
+## Architecture Overview
+
+```mermaid
+graph TD
+    A[Network Events / Auth Logs] --> B[UBAEventCollector]
+    B --> C[UserProfiler - Baseline Engine]
+    C --> D{Analysis Layer}
+    D --> E[TimeAnomalyAnalyzer]
+    D --> F[LocationAnomalyAnalyzer]
+    D --> G[DataExfilDetector]
+    D --> H[PrivilegeEscalationDetector]
+    D --> I[PeerGroupComparator]
+    E & F & G & H & I --> J[RiskScoreAggregator]
+    J --> K[(DB: uba_user_profiles)]
+    J --> L[(DB: uba_events)]
+    J --> M[API / Alerts]
+```
+
+## 1 — Database Layer ([system/database/database.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/system/database/database.py))
+
+Three new SQLAlchemy models:
+
+| Model | Table | Purpose |
+|-------|-------|---------|
+| `UBAUserProfile` | `uba_user_profiles` | Per-user behavioral baseline (rolling stats) |
+| `UBAEvent` | `uba_events` | Individual behavior events with anomaly score |
+| `UBAConfig` | `uba_config` | Settings (thresholds, enable/disable detectors) |
+
+### `UBAUserProfile` fields
+- `username`, `user_id` → FK to [users](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/system/database/database.py#207-226)
+- `typical_hours_start/end` — learned work hours (int)
+- `known_ips` (JSON list, up to 30)
+- `known_services` (JSON list, up to 100)
+- `avg_daily_bytes`, `max_daily_bytes`, `daily_bytes_stddev`
+- `avg_failed_logins`, `avg_session_duration`
+- `peer_group` — department/role label for comparison
+- `risk_score` — current running risk (0–100)
+- `risk_level` — `low|medium|high|critical`
+- `last_seen`, `created_at`, `updated_at`
+- `event_count` — total events analyzed
+- `baseline_locked` — bool; locked = enough data to trust baseline
+
+### `UBAEvent` fields
+- `username`, `source_ip`, `target_service`
+- `bytes_transferred`, `session_duration`
+- `event_time` — actual event timestamp
+- `anomaly_score` (0.0–1.0), `risk_contribution`
+- `detectors_triggered` (JSON list of detector names)
+- `action_taken` — `allow|alert|block`
+- `details` (JSON)
+
+### `UBAConfig` fields
+- [enabled](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/email_security/engine/core/settings.py#182-185), [mode](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/email_security/engine/core/settings.py#186-191) — `monitor|enforce|learning`
+- `baseline_min_events` — events before baseline is trusted (default 50)
+- `max_known_ips`, `max_known_services`
+- `thresholds` (JSON) — per-detector thresholds
+- `alert_on_risk_level` — trigger alert above this level
+
+---
+
+## 2 — Engine (`modules/uba/engine/`)
+
+### `engine/core/user_profiler.py` ← **[REWRITE]** of `user_behavior.py`
+The central brain. Replaces the old 91-line file:
+- `UserProfiler` class that:
+  - Loads/saves `UBAUserProfile` from DB (not in-memory only)
+  - Updates rolling stats using **exponential moving average (EMA)** — so the baseline adapts over time without being hijacked by a single burst
+  - Manages a **baseline locking** mechanism: once N events seen, baseline is "trusted"
+  - Exposes `analyze(event: UBAEvent) -> float` that runs all detectors
+
+### `engine/detectors/time_detector.py` ← **[NEW]**
+- Detects off-hours access
+- Uses a **3-sigma rule**: if event hour is > 3σ from the user's typical hour distribution, flag it
+- Score: 0.0–0.35
+
+### `engine/detectors/location_detector.py` ← **[NEW]**
+- Detects unknown IPs (new location)
+- Bonus: if IP is in a **new country** vs. last known IPs (using IP-prefix heuristics), escalate score
+- Score: 0.0–0.45
+
+### `engine/detectors/exfil_detector.py` ← **[NEW]**
+- Tracks `bytes_transferred` against user's `avg_daily_bytes + 2*stddev`
+- Large upload to unknown destination = high score
+- Score: 0.0–0.40
+
+### `engine/detectors/privilege_detector.py` ← **[NEW]**
+- Tracks access to services far outside `known_services`
+- If high-privilege service (VPN, admin panels, SSH) accessed for first time: high score
+- Score: 0.0–0.35
+
+### `engine/detectors/peer_detector.py` ← **[NEW]**
+- If the user's behavior deviates strongly from their **peer group** (same role/department), flag it
+- Uses simple z-score against peer group averages stored in profiles
+
+### `engine/core/risk_aggregator.py` ← **[NEW]**
+- Takes scores from all detectors
+- Computes **weighted sum** (weights stored in `UBAConfig.thresholds`)
+- Maps to: `low (0–25) | medium (25–55) | high (55–80) | critical (80–100)`
+- Updates the user's running `risk_score` with EMA so one event doesn't spike or clear the score
+
+### `engine/core/uba_plugin.py` ← **[NEW]** (InspectorPlugin)
+- Extends `InspectorPlugin` from `system.inspection_core.framework.plugin_base`
+- `can_inspect()` → returns True for TCP/Auth traffic on known ports
+- `inspect()` → extracts user identity from context metadata → calls `UserProfiler.analyze()` → returns `InspectionResult`
+
+### `engine/__init__.py` ← **[MODIFY]**
+- Export `UBAPlugin` for ModuleManager
+
+---
+
+## 3 — API (`modules/uba/api/router.py`) ← **[REWRITE]**
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/status` | operator+ | Module + stats |
+| `GET` | `/config` | operator+ | Read UBA settings |
+| `PUT` | `/config` | admin | Update thresholds |
+| `GET` | `/users` | operator+ | List all user profiles |
+| `GET` | `/users/{username}` | operator+ | Detail for one user |
+| `DELETE` | `/users/{username}/reset` | admin | Clear user's baseline |
+| `GET` | `/users/{username}/events` | operator+ | Events for a user |
+| `GET` | `/events` | operator+ | All events, filterable by severity/date |
+| `GET` | `/alerts` | operator+ | Events with risk >= high |
+| `POST` | `/events` | admin | Manually submit an event for analysis |
+
+---
+
+## 4 — Module Manager (`system/core/module_manager.py`) ← **[MODIFY]**
+Add `uba` entry to `PLUGIN_REGISTRY`:
+```python
+"uba": {
+    "module": "modules.uba.engine.core.uba_plugin",
+    "class": "UBAPlugin"
+}
+```
+
+---
+
+## Verification Plan
+
+### Automated
+```powershell
+# Import check
+python -c "from modules.uba.engine.core.uba_plugin import UBAPlugin; print('UBAPlugin OK')"
+
+# DB model check
+python -c "from system.database.database import UBAUserProfile, UBAEvent; print('DB Models OK')"
+```
+
+### Functional Tests
+1. POST a synthetic event to `/api/v1/uba/events` → verify score returned
+2. After 50+ events: GET `/users/{username}` → verify `baseline_locked = true`
+3. POST an off-hours event → verify `time_detector` appears in `detectors_triggered`
+4. GET `/alerts` → verify only critical/high risk events appear

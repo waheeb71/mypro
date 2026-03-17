@@ -1,0 +1,3 @@
+dns_security:
+  enabled: true
+  mode: "monitor"

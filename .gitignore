@@ -1,0 +1,94 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+.venv/
+ENV/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+web-ui/dist/
+web-ui/node_modules/
+
+# Machine Learning Models and Data
+ml/models/
+ml/training/outputs/
+ml/training/checkpoints/
+*.h5
+*.pth
+*.pkl
+*.pb
+*.onnx
+*.joblib
+*.tflite
+*.weights
+*.pt
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.bak
+
+# Logs and large files
+*.log
+*.zip
+*.tar.gz
+*.7z
+config/*.local.yaml
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+data/*.db
+data/*.sqlite
+
+# ML Training Data and Datasets
+ml/datasets/
+ml/training/data/
+ml/training/datasets/
+*.csv
+*.tsv
+*.jsonl
+*.parquet
+*.h5
+*.hdf5
+*.npy
+*.npz
+# Ignore large dataset files but keep directory structure if needed
+!ml/datasets/.gitkeep
+!ml/training/data/.gitkeep

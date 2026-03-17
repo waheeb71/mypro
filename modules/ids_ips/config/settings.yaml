@@ -1,0 +1,3 @@
+ids_ips:
+  enabled: true
+  mode: "monitor"

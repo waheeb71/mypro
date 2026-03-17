@@ -1,0 +1,150 @@
+# تقرير النماذج - Enterprise NGFW ML
+
+
+
+## 1. L3 Anomaly Detector — [l3_anomaly_detector.pkl]
+**الوظيفة:** كشف هجمات الشبكة على مستوى L3/L4 (DDoS، BotNet)
+
+**الخوارزمية:** IsolationForest (غير خاضع للإشراف)
+
+**ملفات البيانات:** CIC-DDoS2019 + NF-BoT-IoT-v3
+
+| # | الخاصية | الوصف |
+|---|---|---|
+| 1 | `packets_per_second` | عدد الحزم في الثانية |
+| 2 | `bytes_per_second` | البايتات في الثانية |
+| 3 | `avg_packet_size` | متوسط حجم الحزمة |
+| 4 | `packet_size_variance` | تباين حجم الحزمة |
+| 5 | `tcp_ratio` | نسبة حزم TCP |
+| 6 | `udp_ratio` | نسبة حزم UDP |
+| 7 | `syn_ratio` | نسبة حزم SYN |
+| 8 | `unique_dst_ports` | عدد المنافذ الوجهة الفريدة |
+| 9 | `unique_src_ports` | عدد منافذ المصدر الفريدة |
+| 10 | `inter_arrival_time_mean` | متوسط زمن وصول الحزم |
+| 11 | `inter_arrival_time_variance` | تباين زمن وصول الحزم |
+| 12 | `failed_connections` | الاتصالات الفاشلة |
+| 13 | `connection_attempts` | محاولات الاتصال |
+| 14 | `reputation_score` | درجة سمعة IP |
+| 15 | `flow_duration` | مدة التدفق (ثانية) |
+| 16 | `payload_entropy` | إنتروبيا الحمولة |
+| 17 | `upload_download_ratio` | نسبة الرفع/التنزيل |
+| 18 | `fin_rst_ratio` | نسبة FIN+RST |
+| 19 | `max_packet_size` | أقصى حجم حزمة |
+| 20 | `small_packet_ratio` | نسبة الحزم الصغيرة |
+| 21 | `ack_ratio` | نسبة ACK |
+
+**المخرجات:** `1` (طبيعي) أو `-1` (شاذ)
+
+**الدقة:** 0.9916 (99.16%)
+
+---
+
+## 2. DPI L7 Classifier — [l7_dpi_classifier.pkl]
+
+**الوظيفة:** تصنيف هجمات طبقة التطبيقات (Web Attacks، Brute Force)
+
+**الخوارزمية:** XGBoost / RandomForest (متعدد الفئات)
+
+**ملفات البيانات:** CSE-CIC-IDS2018
+
+**الخصائص:** نفس الـ 21 خاصية في الجدول أعلاه (قائمة TARGET_FEATURES المشتركة)
+
+**المخرجات:** `normal` / `web_attack` / `brute_force`
+
+**الدقة:** 0.9568 (95.68%)
+
+---
+
+## 3. UEBA Classifier — [ueba_rf_classifier.pkl]
+
+**الوظيفة:** تحليل سلوك المستخدم وكشف الأنماط الشاذة على مستوى الجلسة
+
+**الخوارزمية:** RandomForestClassifier (خاضع للإشراف، `n_estimators=200`, `class_weight='balanced'`)
+
+**ملفات البيانات:** UNSW-NB15
+
+**الخصائص:** نفس الـ 21 خاصية في الجدول أعلاه (قائمة TARGET_FEATURES المشتركة)
+
+**المخرجات:** `0` (طبيعي) أو `1` (شاذ)
+
+**الدقة:** 0.9730 (97.3%) ✅ *(تم تحسينه من 0.75)*
+
+---
+
+## 4. Attack Forecaster — [attack_forecaster.pkl]
+
+**الوظيفة:** التنبؤ بحجم هجمات الشبكة في الدقيقة القادمة بناءً على البيانات التاريخية
+
+**الخوارزمية:** RandomForestRegressor (نافذة زمنية منزلقة)
+
+**نوع البيانات:** سلسلة زمنية (حجم الهجمات لكل دقيقة)
+
+| # | الخاصية | الوصف |
+|---|---|---|
+| 1-60 | `window[t-60 .. t-1]` | حجم الهجمات خلال الـ 60 دقيقة الماضية |
+
+**المخرجات:** عدد الهجمات المتوقعة في الدقيقة التالية (قيمة رقمية مستمرة)
+
+**الدقة:** R² = 0.7749 ✅ *(تم تحسينه من 0.7488)*
+
+---
+
+## 5. RL Auto-Response Agent — [rl_q_table.pkl]
+
+**الوظيفة:** تحديد سياسة الاستجابة التلقائية المثلى (Rate Limiting / Block) بناءً على مستوى التهديد
+
+**الخوارزمية:** Q-Learning (تعلم معزز)
+
+| الإدخال | الوصف |
+|---|---|
+| `threat_level` | مستوى التهديد الحالي: 0=Low, 1=Medium, 2=High, 3=Critical |
+
+**المخرجات (Action):**
+| القيمة | الإجراء |
+|---|---|
+| `0` | No Limit — لا قيود |
+| `1` | Soft Limit — تخفيف خفيف |
+| `2` | Strict Limit — تحديد صارم |
+| `3` | Block — حجب |
+
+**تقييم:** Q-Table تتقارب مع السياسة المثلى (High Reward per episode)
+
+---
+
+## 6. Malware PE Classifier — [malware_pe_classifier.pkl]
+
+**الوظيفة:** كشف البرامج الضارة (Ransomware/Trojans) من خلال تحليل رأس الملف القابل للتنفيذ PE
+
+**الخوارزمية:** XGBoost / RandomForest
+
+**ملفات البيانات:** بيانات PE اصطناعية (جاهزة لاستيعاب EMBER Dataset)
+
+| # | الخاصية | الوصف |
+|---|---|---|
+| 1 | `machine` | نوع المعالج المستهدف |
+| 2 | `size_of_optional_header` | حجم الرأس الاختياري |
+| 3 | `characteristics` | خصائص الملف |
+| 4 | `major_linker_version` | إصدار الرابط الرئيسي |
+| 5 | `minor_linker_version` | إصدار الرابط الثانوي |
+| 6 | `size_of_code` | حجم قسم الكود |
+| 7 | `size_of_initialized_data` | حجم البيانات المهيأة |
+| 8 | `size_of_uninitialized_data` | حجم البيانات غير المهيأة |
+| 9 | `address_of_entry_point` | عنوان نقطة الدخول |
+| 10 | `base_of_code` | قاعدة الكود |
+| 11 | `base_of_data` | قاعدة البيانات |
+| 12 | `image_base` | القاعدة الأساسية للصورة |
+| 13 | `section_alignment` | محاذاة الأقسام |
+| 14 | `file_alignment` | محاذاة الملف |
+| 15 | `sections_nb` | عدد الأقسام |
+| 16 | `sections_mean_entropy` | متوسط إنتروبيا الأقسام |
+| 17 | `sections_min_entropy` | أدنى إنتروبيا لقسم |
+| 18 | `sections_max_entropy` | أعلى إنتروبيا لقسم |
+| 19 | `imports_nb` | عدد الـ Imports |
+| 20 | `exports_nb` | عدد الـ Exports |
+
+**المخرجات:** `0` (Benign) أو `1` (Malware)
+
+**الدقة:** 1.0000 (100%) — على بيانات اصطناعية
+
+---
+

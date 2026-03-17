@@ -1,0 +1,190 @@
+proxy:
+  mode: transparent
+  max_connections: 10000
+  buffer_size: 65536
+  connection_timeout: 300
+
+modules:
+  firewall:
+    enabled: true
+    mode: strict
+  ssl_inspection:
+    enabled: true
+  dlp:
+    enabled: true
+  web_filter:
+    enabled: true
+  ids_ips:
+    enabled: true
+  malware_av:
+    enabled: true
+  dns_security:
+    enabled: true
+  http_inspection:
+    enabled: true
+  qos:
+    enabled: true
+  email_security:
+    enabled: false # Has separate daemon typically, or inline mail proxy
+  uba:
+    enabled: true
+  predictive_ai:
+    enabled: true
+  vpn:
+    enabled: false
+  waf:
+    enabled: true
+
+  max_connections: 10000
+  buffer_size: 65536
+  connection_timeout: 300
+tls:
+  ca_cert_path: certs/root-ca.crt
+  ca_key_path: certs/root-ca.key
+  use_intermediate_ca: true
+  intermediate_ca_cert: certs/intermediate-ca.crt
+  intermediate_ca_key: certs/intermediate-ca.key
+  server_cert: certs/server.crt
+  server_key: certs/server.key
+  cert_chain: certs/chain.pem
+  cert_cache_dir: certs/cache
+  cert_cache_size: 10000
+  cert_validity_days: 365
+  cert_key_size: 2048
+  min_tls_version: TLSv1.2
+  max_tls_version: TLSv1.3
+  cipher_suites: []
+  alpn_protocols:
+  - h2
+  - http/1.1
+ssl_inspection:
+  enabled: true
+  bypass_domains:
+  - '*.bank.com'
+  - '*.paypal.com'
+  - '*.banking.app'
+  bypass_ips: []
+  bypass_categories:
+  - banking
+  - healthcare
+  detect_pinning: true
+  pinning_action: bypass
+routing:
+  default_mode: transparent
+  port_mappings:
+    8080: forward
+    8443: forward
+    443: transparent
+    80: transparent
+flow_tracking:
+  enabled: true
+  max_flows: 100000
+  flow_timeout: 3600
+ebpf:
+  enabled: true
+  interface: eth0
+  xdp_mode: native
+  feedback_interval: 5
+  ml_integration:
+    enabled: true
+    action: block
+    confidence_threshold: 0.85
+  port_filter:
+    enabled: true
+    default_action: block
+    allowed_ports:
+    - 80
+    - 443
+    - 8080
+    - 8443
+    - 53
+    - 22
+security:
+  blacklist_ips: []
+  whitelist_ips: []
+  blacklist_domains:
+  - '*.malware.com'
+  - '*.phishing.net'
+  rate_limiting:
+    enabled: true
+    requests_per_second: 1000
+    burst_size: 5000
+  strict_cert_validation: true
+logging:
+  level: INFO
+  file: logs/ngfw.log
+  max_bytes: 104857600
+  backup_count: 10
+  flow_log_enabled: true
+  flow_log_file: logs/flows.log
+  security_log_enabled: true
+  security_log_file: logs/security.log
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+    path: /metrics
+  health_check:
+    enabled: true
+    port: 9091
+    path: /health
+api:
+  enabled: true
+  listen_host: 127.0.0.1
+  listen_port: 8888
+  auth:
+    enabled: true
+    api_key: change-me-in-production
+  websocket:
+    enabled: true
+    port: 8889
+integration:
+  ldap:
+    enabled: false
+    server: ldap://ldap.example.com
+    base_dn: dc=example,dc=com
+    bind_dn: cn=admin,dc=example,dc=com
+    bind_password: ''
+  siem:
+    enabled: false
+    type: syslog
+    server: siem.example.com
+    port: 514
+  ids_ips:
+    enabled: false
+    type: suricata
+    socket_path: suricata.socket
+ml:
+  enabled: true
+  deep_model_path: "m:/��� �������/enterprise_ngfw/models/deep_classifier.onnx"
+  anomaly_detection:
+    enabled: true
+    model_path: "m:/��� �������/enterprise_ngfw/models/anomaly_detector.onnx"
+    threshold: 0.85
+  traffic_profiling:
+    enabled: true
+    learning_period: 86400
+  rl_policy_sync:
+    enabled: false  # يتم تفعيله يدوياً لربط الـ RL بمحرك السياسات
+
+event_sink:
+  buffer_size: 1000
+  flush_interval: 1.0
+  batch_size: 100
+  max_retries: 3
+  retry_delay: 1.0
+  backends:
+  - type: file
+    output_dir: logs/events
+    format: json
+    rotation: daily
+    max_size: 100
+    compress: false
+interfaces:
+  VMware Network Adapter VMnet1: LAN
+  vEthernet (Default Switch): LAN
+
+
+ai_enforcement:
+  auto_block: true        # true = يحجب فوراً (افتراضي) | false = يسجّل فقط
+  anomaly_threshold: 0.8  # العتبة: 0.0 إلى 1.0 (كلما قلّت، زادت الحساسية)

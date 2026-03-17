@@ -1,0 +1,53 @@
+# Enterprise NGFW v2.0 - Phase 2 & 3 Requirements
+
+# ============================================================================
+# Phase 2: eBPF Port Filtering
+# ============================================================================
+
+# BCC (BPF Compiler Collection) for eBPF/XDP
+# Note: May require system packages: bcc-tools, libbcc
+bcc>=0.25.0
+
+# Alternative: bpfcc-python (CentOS/RHEL)
+# bpfcc-python>=0.25.0
+
+# ============================================================================
+# Phase 3: Smart Blocker
+# ============================================================================
+
+# GeoIP Database (MaxMind)
+geoip2>=4.7.0
+maxminddb>=2.4.0
+
+# Threat Intelligence (optional external integrations)
+requests>=2.31.0
+urllib3>=2.0.0
+
+# Data processing
+python-dateutil>=2.8.2
+
+# ============================================================================
+# Optional Enhancements
+# ============================================================================
+
+# Redis for distributed caching (optional)
+# redis>=4.5.0
+# hiredis>=2.2.0
+
+# PostgreSQL for persistent storage (optional)
+# psycopg2-binary>=2.9.0
+
+# Monitoring & Metrics (optional)
+# prometheus-client>=0.17.0
+# statsd>=4.0.0
+
+# ============================================================================
+# Development & Testing
+# ============================================================================
+
+# pytest>=7.4.0
+# pytest-asyncio>=0.21.0
+# pytest-cov>=4.1.0
+# black>=23.7.0
+# flake8>=6.0.0
+# mypy>=1.4.0

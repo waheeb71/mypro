@@ -1,0 +1,3 @@
+email_security:
+  enabled: true
+  mode: "monitor"

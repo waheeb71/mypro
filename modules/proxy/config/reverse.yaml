@@ -1,0 +1,98 @@
+# ═══════════════════════════════════════════════════════════════════
+# Enterprise NGFW - Reverse Proxy Configuration
+# ═══════════════════════════════════════════════════════════════════
+
+# Proxy Configuration
+proxy:
+  # Proxy mode: forward, transparent, reverse, or all
+  mode: "reverse"
+  
+  # Reverse Proxy (Web Server Protection) Settings
+  reverse_listen_host: "0.0.0.0"
+  reverse_listen_port: 443
+  reverse_enabled: true
+  
+  # Reverse Proxy - HTTP listener
+  reverse_http_port: 80
+  reverse_http_enabled: true
+  
+  # Backend servers
+  backends:
+    - host: "192.168.20.2"
+      port: 80
+      ssl: false
+      weight: 1
+  
+  # Performance settings
+  max_connections: 10000
+  buffer_size: 65536
+  connection_timeout: 300
+
+# SSL/TLS Configuration
+tls:
+  # CA certificates (needed for health checks/backend connection if TLS)
+  ca_cert_path: "/etc/ngfw/certs/root-ca.crt"
+  ca_key_path: "/etc/ngfw/certs/root-ca.key"
+  
+  # Server certificate (for reverse proxy termination)
+  server_cert: "/etc/ngfw/certs/server.crt"
+  server_key: "/etc/ngfw/certs/server.key"
+  cert_chain: "/etc/ngfw/certs/chain.pem"
+  
+  # TLS protocol versions
+  min_tls_version: "TLSv1.2"
+  max_tls_version: "TLSv1.3"
+  
+  # Cipher suites
+  cipher_suites: []
+  
+  # ALPN protocols
+  alpn_protocols:
+    - "h2"
+    - "http/1.1"
+
+# Routing Configuration
+routing:
+  default_mode: "reverse"
+  port_mappings:
+    443: "reverse"
+    80: "reverse"
+
+# Flow Tracking
+flow_tracking:
+  enabled: true
+  max_flows: 100000
+  flow_timeout: 3600
+
+# Security Policies (WAF & Protection)
+security:
+  blacklist_ips: []
+  whitelist_ips: []
+  blacklist_domains: []
+  rate_limiting:
+    enabled: true
+    requests_per_second: 5000
+    burst_size: 10000
+  strict_cert_validation: true
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  file: "/var/log/ngfw/ngfw.log"
+  max_bytes: 104857600
+  backup_count: 10
+  flow_log_enabled: true
+  flow_log_file: "/var/log/ngfw/flows.log"
+  security_log_enabled: true
+  security_log_file: "/var/log/ngfw/security.log"
+
+# Monitoring Configuration
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+  health_check:
+    enabled: true
+    port: 9091
+    path: "/health"

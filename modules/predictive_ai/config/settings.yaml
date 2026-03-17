@@ -1,0 +1,3 @@
+predictive_ai:
+  enabled: true
+  mode: "monitor"

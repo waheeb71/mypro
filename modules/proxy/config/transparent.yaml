@@ -1,0 +1,79 @@
+# ═══════════════════════════════════════════════════════════════════
+# Enterprise NGFW - Transparent Proxy Configuration
+# ═══════════════════════════════════════════════════════════════════
+
+# Proxy Configuration
+proxy:
+  # Proxy mode: forward, transparent, reverse, or all
+  mode: "transparent"
+  
+  # Transparent Proxy (Gateway Mode) Settings
+  transparent_listen_host: "0.0.0.0"
+  transparent_listen_port: 8443
+  transparent_enabled: true
+  
+  # Performance settings
+  max_connections: 10000
+  buffer_size: 65536
+  connection_timeout: 300
+
+# SSL/TLS Configuration
+tls:
+  ca_cert_path: "/etc/ngfw/certs/root-ca.crt"
+  ca_key_path: "/etc/ngfw/certs/root-ca.key"
+  use_intermediate_ca: true
+  intermediate_ca_cert: "/etc/ngfw/certs/intermediate-ca.crt"
+  intermediate_ca_key: "/etc/ngfw/certs/intermediate-ca.key"
+  cert_cache_dir: "/var/cache/ngfw/certs"
+  cert_cache_size: 10000
+  min_tls_version: "TLSv1.2"
+  max_tls_version: "TLSv1.3"
+  alpn_protocols:
+    - "h2"
+    - "http/1.1"
+
+# SSL Inspection Policy
+ssl_inspection:
+  enabled: true
+  bypass_domains:
+    - "*.bank.com"
+    - "*.paypal.com"
+  detect_pinning: true
+  pinning_action: "bypass"
+
+# Routing Configuration
+routing:
+  default_mode: "transparent"
+  port_mappings:
+    443: "transparent"
+    80: "transparent"
+
+# eBPF XDP Configuration
+ebpf:
+  enabled: true
+  interface: "eth0"
+  xdp_mode: "native"
+  port_filter:
+    enabled: true
+    allowed_ports:
+      - 80
+      - 443
+      - 53
+      - 22
+
+# Security Policies
+security:
+  blacklist_ips: []
+  blacklist_domains:
+    - "*.malware.com"
+  rate_limiting:
+    enabled: true
+    requests_per_second: 1000
+    burst_size: 5000
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  file: "/var/log/ngfw/ngfw.log"
+  flow_log_enabled: true
+  security_log_enabled: true

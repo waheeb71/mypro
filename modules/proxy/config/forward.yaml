@@ -1,0 +1,126 @@
+# ═══════════════════════════════════════════════════════════════════
+# Enterprise NGFW - Forward Proxy Configuration
+# ═══════════════════════════════════════════════════════════════════
+
+# Proxy Configuration
+proxy:
+  # Proxy mode: forward, transparent, reverse, or all
+  mode: "forward"
+  
+  # Forward Proxy (Explicit Proxy) Settings
+  forward_listen_host: "0.0.0.0"
+  forward_listen_port: 8080
+  forward_enabled: true
+  
+  # Performance settings
+  max_connections: 10000
+  buffer_size: 65536
+  connection_timeout: 300
+
+# SSL/TLS Configuration
+tls:
+  # CA certificates
+  ca_cert_path: "/etc/ngfw/certs/root-ca.crt"
+  ca_key_path: "/etc/ngfw/certs/root-ca.key"
+  
+  # Intermediate CA
+  use_intermediate_ca: true
+  intermediate_ca_cert: "/etc/ngfw/certs/intermediate-ca.crt"
+  intermediate_ca_key: "/etc/ngfw/certs/intermediate-ca.key"
+  
+  # Certificate generation settings
+  cert_cache_dir: "/var/cache/ngfw/certs"
+  cert_cache_size: 10000
+  cert_validity_days: 365
+  cert_key_size: 2048
+  
+  # TLS protocol versions
+  min_tls_version: "TLSv1.2"
+  max_tls_version: "TLSv1.3"
+  
+  # Cipher suites (empty = use defaults)
+  cipher_suites: []
+  
+  # ALPN protocols
+  alpn_protocols:
+    - "h2"
+    - "http/1.1"
+
+# SSL Inspection Policy
+ssl_inspection:
+  enabled: true
+  bypass_domains:
+    - "*.bank.com"
+    - "*.paypal.com"
+    - "*.banking.app"
+  bypass_ips: []
+  bypass_categories:
+    - "banking"
+    - "healthcare"
+  detect_pinning: true
+  pinning_action: "bypass"
+
+# Routing Configuration
+routing:
+  default_mode: "forward"
+  port_mappings:
+    8080: "forward"
+    8443: "forward"
+
+# Flow Tracking
+flow_tracking:
+  enabled: true
+  max_flows: 100000
+  flow_timeout: 3600
+
+# eBPF XDP Configuration
+ebpf:
+  enabled: true
+  interface: "eth0"
+  xdp_mode: "native"
+  feedback_interval: 5
+  port_filter:
+    enabled: true
+    default_action: "block"
+    allowed_ports:
+      - 80
+      - 443
+      - 8080
+      - 8443
+      - 53
+      - 22
+
+# Security Policies
+security:
+  blacklist_ips: []
+  whitelist_ips: []
+  blacklist_domains:
+    - "*.malware.com"
+    - "*.phishing.net"
+  rate_limiting:
+    enabled: true
+    requests_per_second: 1000
+    burst_size: 5000
+  strict_cert_validation: true
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  file: "/var/log/ngfw/ngfw.log"
+  max_bytes: 104857600
+  backup_count: 10
+  flow_log_enabled: true
+  flow_log_file: "/var/log/ngfw/flows.log"
+  security_log_enabled: true
+  security_log_file: "/var/log/ngfw/security.log"
+
+# Monitoring Configuration
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+  health_check:
+    enabled: true
+    port: 9091
+    path: "/health"

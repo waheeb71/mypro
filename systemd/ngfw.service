@@ -1,0 +1,58 @@
+[Unit]
+Description=Enterprise NGFW - Next Generation Firewall
+Documentation=https://github.com/your-org/enterprise-ngfw
+After=network-online.target
+Wants=network-online.target
+ConditionFileIsExecutable=/usr/bin/python3
+
+[Service]
+Type=notify
+User=ngfw
+Group=ngfw
+
+# Working directory
+WorkingDirectory=/opt/enterprise_ngfw
+
+# Environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="NGFW_CONFIG=/etc/ngfw/config.yaml"
+
+# Execution
+ExecStartPre=/usr/bin/python3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)"
+ExecStart=/usr/bin/python3 main.py --config ${NGFW_CONFIG}
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/ngfw /var/lib/ngfw
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=enterprise-ngfw
+
+# Health checks (requires systemd-notify)
+WatchdogSec=60s
+
+# Kill mode
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30s
+
+[Install]
+WantedBy=multi-user.target

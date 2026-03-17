@@ -1,0 +1,3 @@
+vpn:
+  enabled: true
+  mode: "monitor"
