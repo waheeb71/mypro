@@ -93,7 +93,7 @@ async def async_main():
         import uvicorn
         
         # Pass NGFW instance to API
-        api_app.state.ngfw_app = app
+        api_app.state.ngfw = app
         
         api_config = app.config.get('api', {})
         host = api_config.get('host', '0.0.0.0')
