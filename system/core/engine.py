@@ -380,7 +380,7 @@ class NGFWApplication:
                         logger.info(f"🤖 RL Optimizer applied action: {action.name}")
                     
                     if self.attack_forecaster:
-                        forecast = self.attack_forecaster.forecast(current_state.throughput_pps)
+                        forecast = self.attack_forecaster.forecast()
                         if forecast.risk_level in ["HIGH", "CRITICAL"]:
                             logger.warning(f"🔮 Forecast Risk: {forecast.risk_level}")
                         
