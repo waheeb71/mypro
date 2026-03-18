@@ -24,6 +24,7 @@ from system.ml_core import (
     DeepTrafficClassifier,
     RLPolicyOptimizer, RLState, PolicyAdjustment
 )
+from modules.ids_ips.engine.anomaly_detector import AnomalyDetector
 
 # Advanced AI Layers
 from modules.predictive_ai.engine.predictive import AttackForecaster
