@@ -57,6 +57,7 @@ class AnomalyDetector:
         self.l7_model = None
         self.l7_model_type = None
         self.scaler = None # Stub for feature scaling
+        self.anomalies_detected = 0
         logger.info(f"AnomalyDetector initialized with contamination={contamination}")
         
         if model_path and os.path.exists(model_path):
@@ -204,6 +205,9 @@ class AnomalyDetector:
                         is_anomaly = True
                         anomaly_score = max(anomaly_score, l7_result["confidence"])
                 
+                if is_anomaly:
+                    self.anomalies_detected += 1
+                
                 return AnomalyResult(
                     is_anomaly=is_anomaly,
                     anomaly_score=anomaly_score,
@@ -234,9 +238,23 @@ class AnomalyDetector:
             
         is_anomaly = score > 0.5
         
+        if is_anomaly:
+            self.anomalies_detected += 1
+            
         return AnomalyResult(
             is_anomaly=is_anomaly,
             anomaly_score=score,
             confidence=0.8 if is_anomaly else 0.9,
             details=details
         )
+        
+    def get_stats(self) -> Dict[str, int]:
+        """
+        Get statistics about anomaly detection.
+        
+        Returns:
+            Dictionary containing statistics.
+        """
+        return {
+            'anomalies_detected': self.anomalies_detected
+        }
