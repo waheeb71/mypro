@@ -28,7 +28,13 @@ export default function Login() {
       await login(form.username, form.password);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid credentials. Please try again.');
+      if (err.response?.data?.detail) {
+        setError(typeof err.response.data.detail === 'string' 
+          ? err.response.data.detail 
+          : JSON.stringify(err.response.data.detail));
+      } else {
+        setError('Invalid credentials or connection error. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
