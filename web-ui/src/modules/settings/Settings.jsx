@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { systemApi } from '../../services/api';
-import { Save, RefreshCw, FileText, Server, Shield, Layers, Plus } from 'lucide-react';
+import { Save, RefreshCw, FileText, Server, Shield, Layers, Plus, Terminal } from 'lucide-react';
 import './Settings.css';
 
 export default function Settings() {
@@ -134,6 +134,12 @@ export default function Settings() {
             onClick={() => setActiveFile('phase2_3.yaml')}
           >
             <Layers size={18} /> phase2_3.yaml
+          </div>
+          <div 
+            className={`file-tab ${activeFile === 'sysctl-optimization.conf' ? 'active' : ''}`}
+            onClick={() => setActiveFile('sysctl-optimization.conf')}
+          >
+            <Terminal size={18} /> sysctl (Kernel)
           </div>
         </div>
         

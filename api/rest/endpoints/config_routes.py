@@ -46,6 +46,19 @@ def _read_config(filename: str = "base.yaml") -> dict:
     path = _config_path(filename)
     if not path.exists():
         return {}
+        
+    if filename.endswith(".conf"):
+        data = {}
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    val = v.strip()
+                    if val.isdigit(): val = int(val)
+                    data[k.strip()] = val
+        return {"sysctl": data}
+
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
@@ -54,6 +67,30 @@ def _write_config(data: dict, filename: str = "base.yaml"):
     path = _config_path(filename)
     with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
+
+
+def _write_config_conf(update_key: str, update_val: Any, filename: str):
+    path = _config_path(filename)
+    if not path.exists():
+        return
+        
+    with open(path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+        
+    found = False
+    for i, line in enumerate(lines):
+        if line.strip() and not line.strip().startswith("#") and "=" in line:
+            k, _ = line.split("=", 1)
+            if k.strip() == update_key:
+                lines[i] = f"{k.strip()} = {update_val}\n"
+                found = True
+                break
+                
+    if not found:
+        lines.append(f"{update_key} = {update_val}\n")
+        
+    with open(path, "w", encoding="utf-8") as f:
+        f.writelines(lines)
 
 
 def _hot_reload(request: Request):
@@ -81,6 +118,10 @@ async def get_config(request: Request, file: str = "base.yaml", token: dict = De
 async def update_config(request: Request, update: ConfigUpdate, file: str = "base.yaml", token: dict = Depends(require_admin)):
     """Update a single configuration key in a specific file and hot-reload the engine. Admin only."""
     try:
+        if file.endswith(".conf"):
+            _write_config_conf(update.key, update.value, file)
+            return {"status": "success", "updated": f"sysctl.{update.key}", "file": file}
+
         cfg = _read_config(file)
         cfg.setdefault(update.category, {})
         section = cfg[update.category]
