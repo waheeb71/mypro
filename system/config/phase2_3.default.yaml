@@ -1,0 +1,287 @@
+# Enterprise NGFW v2.0 - Phase 2 & 3 Configuration
+# Port Filtering (eBPF XDP) + Smart Blocker
+
+# ============================================================================
+# PHASE 2: eBPF Port Filtering
+# ============================================================================
+port_filtering:
+  enabled: true
+  interface: "eth0"  # Network interface for XDP attachment
+  
+  mode: "whitelist"  # Options: "disabled", "whitelist", "blacklist"
+  
+  # Filter protocols
+  filter_tcp: true
+  filter_udp: true
+  
+  # Whitelist ports (only these allowed when mode=whitelist)
+  whitelist:
+    tcp:
+      - 22    # SSH
+      - 80    # HTTP
+      - 443   # HTTPS
+      - 8080  # HTTP Alt
+      - 3306  # MySQL
+      - 5432  # PostgreSQL
+      - 6379  # Redis
+    udp:
+      - 53    # DNS
+      - 123   # NTP
+      - 500   # IPsec IKE
+      - 4500  # IPsec NAT-T
+  
+  # Blacklist ports (block these when mode=blacklist)
+  blacklist:
+    tcp:
+      - 23    # Telnet
+      - 135   # RPC
+      - 139   # NetBIOS
+      - 445   # SMB
+      - 1433  # MSSQL
+      - 3389  # RDP
+    udp:
+      - 69    # TFTP
+      - 137   # NetBIOS Name
+      - 138   # NetBIOS Datagram
+  
+  # Statistics collection
+  statistics:
+    enabled: true
+    collection_interval: 60  # seconds
+    top_ports_count: 20
+
+# ============================================================================
+# PHASE 3: Smart Blocker
+# ============================================================================
+smart_blocker:
+  enabled: true
+  
+  # Global policy mode
+  policy_mode: "balanced"  # Options: "permissive", "balanced", "strict", "paranoid"
+  
+  # ---------------------------------------------------------------------------
+  # Reputation Engine
+  # ---------------------------------------------------------------------------
+  reputation:
+    enabled: true
+    
+    # Scoring thresholds
+    block_threshold: 30  # Block if score < 30
+    monitor_threshold: 50  # Monitor if score < 50
+    
+    # Score decay (move toward neutral over time)
+    decay_rate: 0.1  # Points per day
+    decay_interval: 86400  # 24 hours
+    
+    # IP whitelist (always trusted)
+    ip_whitelist:
+      - "127.0.0.1"
+      - "::1"
+      - "10.0.0.0/8"      # Private networks
+      - "172.16.0.0/12"
+      - "192.168.0.0/16"
+    
+    # IP blacklist (always blocked)
+    ip_blacklist: []
+    
+    # Domain whitelist
+    domain_whitelist:
+      - "google.com"
+      - "github.com"
+      - "stackoverflow.com"
+    
+    # Domain blacklist
+    domain_blacklist: []
+    
+    # Cleanup old entries
+    cleanup:
+      enabled: true
+      max_age_days: 30
+      interval: 86400  # Daily cleanup
+  
+  # ---------------------------------------------------------------------------
+  # GeoIP Filtering
+  # ---------------------------------------------------------------------------
+  geoip:
+    enabled: true
+    
+    # Database paths (MaxMind GeoIP2)
+    database_path: "/var/lib/geoip/GeoLite2-City.mmdb"
+    asn_database_path: "/var/lib/geoip/GeoLite2-ASN.mmdb"
+    
+    # Blocking mode: "whitelist" or "blacklist"
+    mode: "blacklist"
+    
+    # Country whitelist (ISO 3166-1 alpha-2 codes)
+    # Only these countries allowed if mode=whitelist
+    country_whitelist: []
+    
+    # Country blacklist
+    # Block traffic from these countries if mode=blacklist
+    country_blacklist:
+      - "KP"  # North Korea
+      - "IR"  # Iran
+      - "SY"  # Syria
+    
+    # Continent blacklist (for broad blocking)
+    continent_blacklist: []  # e.g., ["AS", "AF"]
+    
+    # ASN blacklist (block specific networks)
+    asn_blacklist: []
+    
+    # Special blocking
+    block_anonymous_proxies: true
+    block_satellite_providers: false
+    block_tor_exit_nodes: true
+  
+  # ---------------------------------------------------------------------------
+  # Category Blocker (90+ Categories)
+  # ---------------------------------------------------------------------------
+  categories:
+    enabled: true
+    
+    # Block by risk level
+    block_critical_risk: true   # MALWARE, PHISHING, RANSOMWARE, etc.
+    block_high_risk: true       # SPYWARE, BOTNETS, ILLEGAL_DRUGS, etc.
+    block_medium_risk: false    # ADULT_EXPLICIT, GAMBLING, ANONYMIZERS
+    block_low_risk: false       # SOCIAL_NETWORKING, VIDEO_STREAMING
+    
+    # Specific category blocking (by category name)
+    blocked_categories:
+      # Security threats (auto-included with block_critical_risk)
+      - "MALWARE"
+      - "PHISHING"
+      - "RANSOMWARE"
+      - "SPYWARE"
+      - "BOTNETS"
+      - "CRYPTOJACKING"
+      - "COMMAND_CONTROL"
+      - "EXPLOIT_KITS"
+      
+      # Illegal content
+      - "CHILD_ABUSE"
+      - "ILLEGAL_DRUGS"
+      - "ILLEGAL_WEAPONS"
+      - "TERRORISM"
+      
+      # Workplace policy (optional)
+      # - "ADULT_EXPLICIT"
+      # - "GAMBLING_CASINO"
+      # - "SOCIAL_NETWORKING"
+      # - "VIDEO_STREAMING"
+      # - "GAMING_ONLINE"
+      # - "TORRENT_SITES"
+      # - "ANONYMIZERS"
+    
+    # Custom patterns (regex)
+    custom_patterns: {}
+      # Example:
+      # MALWARE:
+      #   - ".*badsite.*"
+      #   - ".*malicious.*"
+  
+  # ---------------------------------------------------------------------------
+  # Threat Intelligence
+  # ---------------------------------------------------------------------------
+  threat_intelligence:
+    enabled: true
+    
+    # Threat level threshold for blocking
+    block_threshold: "MEDIUM"  # Options: "INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"
+    
+    # Maximum indicators to keep in memory
+    max_indicators: 1000000
+    
+    # Maximum age of indicators (hours)
+    max_age_hours: 168  # 7 days
+    
+    # Threat feeds
+    feeds:
+      abuse_ch_urlhaus:
+        enabled: true
+        url: "https://urlhaus.abuse.ch/downloads/csv_recent/"
+        type: "url"
+        update_interval: 3600  # 1 hour
+      
+      abuse_ch_feodotracker:
+        enabled: true
+        url: "https://feodotracker.abuse.ch/downloads/ipblocklist.txt"
+        type: "ip"
+        update_interval: 3600
+      
+      blocklist_de:
+        enabled: true
+        url: "https://lists.blocklist.de/lists/all.txt"
+        type: "ip"
+        update_interval: 3600
+      
+      tor_exit_nodes:
+        enabled: true
+        url: "https://check.torproject.org/exit-addresses"
+        type: "ip"
+        update_interval: 7200  # 2 hours
+      
+      phishtank:
+        enabled: true
+        url: "https://data.phishtank.com/data/online-valid.csv"
+        type: "url"
+        update_interval: 3600
+    
+    # Feed update settings
+    auto_update: true
+    update_on_startup: true
+    
+    # Cleanup settings
+    cleanup:
+      enabled: true
+      interval: 86400  # Daily cleanup
+  
+  # ---------------------------------------------------------------------------
+  # Logging & Monitoring
+  # ---------------------------------------------------------------------------
+  logging:
+    # Log all blocking decisions
+    log_blocks: true
+    
+    # Log allowed connections (verbose)
+    log_allows: false
+    
+    # Log monitored connections
+    log_monitors: true
+    
+    # Log format
+    format: "json"  # Options: "json", "text"
+    
+    # Log destination
+    destination: "file"  # Options: "file", "syslog", "both"
+    file_path: "logs/smart_blocker.log"
+    
+  # ---------------------------------------------------------------------------
+  # Performance Tuning
+  # ---------------------------------------------------------------------------
+  performance:
+    # Cache settings
+    reputation_cache_size: 100000
+    geoip_cache_size: 50000
+    category_cache_size: 10000
+    
+    # Thread pool
+    worker_threads: 4
+    
+    # Rate limiting (per IP)
+    rate_limiting:
+      enabled: true
+      max_connections_per_second: 100
+      burst_size: 200
+
+# ============================================================================
+# Integration with Proxy Modes
+# ============================================================================
+integration:
+  # Apply smart blocker to which proxy modes
+  forward_proxy: true
+  transparent_proxy: true
+  reverse_proxy: true
+  
+  # Apply port filtering
+  port_filter_all_modes: true

@@ -136,8 +136,37 @@ async def update_config(request: Request, update: ConfigUpdate, file: str = "bas
         raise HTTPException(status_code=500, detail=f"Config update error: {e}")
 
 
+@router.post("/config/reset")
+async def reset_config(request: Request, file: str = "base.yaml", token: dict = Depends(require_admin)):
+    """Reset a specific configuration file to its factory default."""
+    import shutil
+    try:
+        path = _config_path(file)
+        
+        # Build default path: base.yaml -> base.default.yaml, sys.conf -> sys.default.conf
+        parts = file.rsplit(".", 1)
+        if len(parts) == 2:
+            default_file = f"{parts[0]}.default.{parts[1]}"
+        else:
+            default_file = f"{file}.default"
+            
+        default_path = _config_path(default_file)
+        
+        if not default_path.exists():
+            raise HTTPException(status_code=404, detail="Default configuration backup not found.")
+            
+        shutil.copyfile(default_path, path)
+        _hot_reload(request)
+        return {"status": "success", "message": f"{file} has been restored to default settings."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reset config: {e}")
+
+
 @router.get("/config/modules")
 async def list_modules(token: dict = Depends(require_operator)):
+
     """Return the enabled/disabled state of every module. Operator+ only."""
     try:
         cfg = _read_config()

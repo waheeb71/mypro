@@ -5,7 +5,7 @@
  */
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://192.168.109.137:8000';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -47,6 +47,7 @@ export const systemApi = {
   config: (file = 'base.yaml') => api.get(`/api/v1/config?file=${file}`),
   modules: ()     => api.get('/api/v1/config/modules'),
   updateConfig: (data, file = 'base.yaml') => api.put(`/api/v1/config?file=${file}`, data),
+  resetConfig:  (file = 'base.yaml') => api.post(`/api/v1/config/reset?file=${file}`),
   toggleModule: (name, enabled) =>
     api.put(`/api/v1/modules/${name}/toggle`, { enabled }),
   checkUpdate: () => api.get('/api/v1/system/update/check'),

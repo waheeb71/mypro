@@ -25,11 +25,28 @@ export default function Settings() {
     }
   });
 
+  const resetMutation = useMutation({
+    mutationFn: () => systemApi.resetConfig(activeFile),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['config'] });
+      alert(`Successfully restored ${activeFile} to defaults.`);
+    },
+    onError: (err) => {
+      alert(`Failed to restore ${activeFile}: ${err.message}`);
+    }
+  });
+
   if (isLoading) return <div className="settings-loading"><RefreshCw className="spin" /> Loading configurations...</div>;
   if (isError) return <div className="settings-error">Failed to load {activeFile}</div>;
 
   const handleToggleExpand = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const handleReset = () => {
+    if (window.confirm(`Are you sure you want to restore ${activeFile} to its factory default settings? All current changes will be lost.`)) {
+      resetMutation.mutate();
+    }
   };
 
   const handleValueChange = (category, objKey, val, originalType) => {
@@ -143,9 +160,14 @@ export default function Settings() {
           </div>
         </div>
         
-        <button className="btn-refresh" onClick={() => refetch()}>
-          <RefreshCw size={16} /> Refresh
-        </button>
+        <div className="settings-actions" style={{display: 'flex', gap: '8px'}}>
+          <button className="btn-refresh" onClick={handleReset} style={{ borderColor: 'var(--error-color)', color: 'var(--error-color)'}}>
+            <RefreshCw size={16} /> Restore Default
+          </button>
+          <button className="btn-refresh" onClick={() => refetch()}>
+            <RefreshCw size={16} /> Refresh
+          </button>
+        </div>
       </div>
 
       <div className="settings-content">
