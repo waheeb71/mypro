@@ -17,7 +17,8 @@ const NAV_ITEMS = [
   { to: '/http',        icon: Search,           label: 'HTTP Inspect' },
   { to: '/ssl',         icon: Wifi,             label: 'SSL Inspect' },
   { to: '/ai',          icon: Zap,              label: 'Predictive AI' },
-  { to: '/system',      icon: Settings,         label: 'System' },
+  { to: '/system',      icon: Settings,         label: 'System Components' },
+  { to: '/settings',    icon: Database,         label: 'Raw Configs' },
   { to: '/users',       icon: User,             label: 'Users & RBAC' },
 ];
 

@@ -15,6 +15,8 @@ import System    from './modules/system/System';
 import VPN       from './modules/vpn/VPN';
 import DNS       from './modules/dns_security/DNS';
 
+import Settings  from './modules/settings/Settings';
+
 // Shared CSS
 import './modules/firewall/Firewall.css'; // contains shared .module-page, .icon-btn etc.
 
@@ -44,13 +46,14 @@ export default function App() {
                 </PrivateRoute>
               }
             >
-              <Route index          element={<Dashboard />} />
+              <Route index           element={<Dashboard />} />
               <Route path="firewall" element={<Firewall />} />
               <Route path="waf"      element={<WAF />} />
               <Route path="ids-ips"  element={<IDSIPS />} />
               <Route path="vpn"      element={<VPN />} />
               <Route path="dns"      element={<DNS />} />
               <Route path="system"   element={<System />} />
+              <Route path="settings" element={<Settings />} />
 
               {/* Catch-all */}
               <Route path="*" element={<Navigate to="/" replace />} />

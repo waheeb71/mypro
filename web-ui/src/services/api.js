@@ -44,9 +44,9 @@ export const authApi = {
 export const systemApi = {
   status: ()      => api.get('/api/v1/status'),
   health: ()      => api.get('/health'),
-  config: ()      => api.get('/api/v1/config'),
+  config: (file = 'base.yaml') => api.get(`/api/v1/config?file=${file}`),
   modules: ()     => api.get('/api/v1/config/modules'),
-  updateConfig: (data) => api.put('/api/v1/config', data),
+  updateConfig: (data, file = 'base.yaml') => api.put(`/api/v1/config?file=${file}`, data),
   toggleModule: (name, enabled) =>
     api.put(`/api/v1/modules/${name}/toggle`, { enabled }),
   checkUpdate: () => api.get('/api/v1/system/update/check'),

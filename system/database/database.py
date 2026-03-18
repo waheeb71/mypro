@@ -169,6 +169,7 @@ class EmailSecurityConfig(Base):
 class QoSConfig(Base):
     """Quality of Service — global rate-limit configuration."""
     __tablename__ = 'qos_config'
+    
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     enabled = Column(Boolean, default=False)

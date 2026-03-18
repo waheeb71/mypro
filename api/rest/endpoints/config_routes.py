@@ -34,20 +34,25 @@ class ModuleToggle(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _config_path() -> str:
-    path = os.getenv("NGFW_CONFIG", "/etc/ngfw/config.yaml")
-    if not os.path.exists(path):
-        path = Path(__file__).parent.parent.parent.parent / "system" / "config" / "base.yaml"
-    return str(path)
+def _config_path(filename: str = "base.yaml") -> Path:
+    base_dir = Path(__file__).parent.parent.parent.parent / "system" / "config"
+    target_path = base_dir / filename
+    if not str(target_path.resolve()).startswith(str(base_dir.resolve())):
+        raise ValueError("Invalid configuration file path.")
+    return target_path
 
 
-def _read_config() -> dict:
-    with open(_config_path(), "r", encoding="utf-8") as f:
+def _read_config(filename: str = "base.yaml") -> dict:
+    path = _config_path(filename)
+    if not path.exists():
+        return {}
+    with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
-def _write_config(data: dict):
-    with open(_config_path(), "w", encoding="utf-8") as f:
+def _write_config(data: dict, filename: str = "base.yaml"):
+    path = _config_path(filename)
+    with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
 
 
@@ -64,28 +69,28 @@ def _hot_reload(request: Request):
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @router.get("/config")
-async def get_config(request: Request, token: dict = Depends(require_admin)):
-    """Return the full system configuration. Admin only."""
+async def get_config(request: Request, file: str = "base.yaml", token: dict = Depends(require_admin)):
+    """Return the full system configuration from a specific file. Admin only."""
     try:
-        return _read_config()
+        return _read_config(file)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Config read error: {e}")
 
 
 @router.put("/config")
-async def update_config(request: Request, update: ConfigUpdate, token: dict = Depends(require_admin)):
-    """Update a single configuration key and hot-reload the engine. Admin only."""
+async def update_config(request: Request, update: ConfigUpdate, file: str = "base.yaml", token: dict = Depends(require_admin)):
+    """Update a single configuration key in a specific file and hot-reload the engine. Admin only."""
     try:
-        cfg = _read_config()
+        cfg = _read_config(file)
         cfg.setdefault(update.category, {})
         section = cfg[update.category]
         if isinstance(section, dict) and isinstance(update.value, dict):
             section.setdefault(update.key, {}).update(update.value)
         else:
             cfg[update.category][update.key] = update.value
-        _write_config(cfg)
+        _write_config(cfg, file)
         _hot_reload(request)
-        return {"status": "success", "updated": f"{update.category}.{update.key}"}
+        return {"status": "success", "updated": f"{update.category}.{update.key}", "file": file}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Config update error: {e}")
 
