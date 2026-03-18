@@ -171,8 +171,8 @@ class NGFWApplication:
         logger.info("Initializing components...")
         self.db.initialize()
         import os
-        admin_pass = os.getenv("NGFW_ADMIN_PASSWORD", "admin123")
-        op_pass = os.getenv("NGFW_OPERATOR_PASSWORD", "operator123")
+        admin_pass = os.getenv("NGFW_ADMIN_PASSWORD", "Admin@1234")
+        op_pass = os.getenv("NGFW_OPERATOR_PASSWORD", "Operator@1234")
         from api.rest.auth import _hash_password
         self.db.add_default_users(_hash_password(admin_pass), _hash_password(op_pass))
         logger.info("✅ Database initialized")
