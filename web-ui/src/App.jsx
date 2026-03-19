@@ -8,7 +8,8 @@ import Shell from './layout/Shell';
 // Pages
 import Login     from './modules/auth/Login';
 import Dashboard from './modules/dashboard/Dashboard';
-import Firewall  from './modules/firewall/Firewall';
+import Firewall     from './modules/firewall/Firewall';
+import IPBlocklist  from './modules/firewall/IPBlocklist';
 import WAF       from './modules/waf/WAF';
 import IDSIPS    from './modules/ids_ips/IDSIPS';
 import System    from './modules/system/System';
@@ -47,7 +48,8 @@ export default function App() {
               }
             >
               <Route index           element={<Dashboard />} />
-              <Route path="firewall" element={<Firewall />} />
+              <Route path="firewall"      element={<Firewall />} />
+              <Route path="ip-blocklist" element={<IPBlocklist />} />
               <Route path="waf"      element={<WAF />} />
               <Route path="ids-ips"  element={<IDSIPS />} />
               <Route path="vpn"      element={<VPN />} />

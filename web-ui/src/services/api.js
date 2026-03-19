@@ -66,13 +66,16 @@ export const usersApi = {
 
 /* ── Firewall ──────────────────────────────────────── */
 export const firewallApi = {
-  rules: ()        => api.get('/api/v1/rules'),
-  createRule: (d)  => api.post('/api/v1/rules', d),
-  updateRule: (id, d) => api.put(`/api/v1/rules/${id}`, d),
-  deleteRule: (id) => api.delete(`/api/v1/rules/${id}`),
-  blockIp: (ip, duration) =>
-    api.post(`/api/v1/block/${ip}`, null, { params: { duration } }),
-  unblockIp: (ip)  => api.delete(`/api/v1/block/${ip}`),
+  rules:       ()         => api.get('/api/v1/rules'),
+  createRule:  (d)        => api.post('/api/v1/rules', d),
+  updateRule:  (id, d)    => api.put(`/api/v1/rules/${id}`, d),
+  deleteRule:  (id)       => api.delete(`/api/v1/rules/${id}`),
+  // IP Blocklist
+  blockedIps:  ()         => api.get('/api/v1/block/ips'),
+  blockIp:     (ip, reason, duration_seconds) =>
+    api.post(`/api/v1/block/${encodeURIComponent(ip)}`, { reason: reason || 'Manual block', duration_seconds: duration_seconds || null }),
+  unblockIp:   (ip)       => api.delete(`/api/v1/block/${encodeURIComponent(ip)}`),
+  unblockAll:  ()         => api.delete('/api/v1/block/all'),
 };
 
 /* ── WAF ───────────────────────────────────────────── */

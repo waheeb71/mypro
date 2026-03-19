@@ -146,21 +146,92 @@ async def evaluate_policy(
         matched_rules=[result.get("rule_name")] if result.get("rule_name") else []
     )
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# IP Blocklist Management Endpoints
+# Uses IPBlocklistManager from modules.firewall.engine.ip_blocklist
+# ══════════════════════════════════════════════════════════════════════════════
+
+class BlockIPRequest(BaseModel):
+    reason: str = "Manual block"
+    duration_seconds: Optional[int] = None   # None = permanent
+
+
+@router.get("/block/ips")
+async def list_blocked_ips(token: dict = Depends(require_firewall)):
+    """List all currently blocked IPs with metadata. Operator+ access."""
+    from modules.firewall.engine.ip_blocklist import get_blocklist_manager
+    mgr = get_blocklist_manager()
+    return {
+        "blocked_ips": mgr.get_all(),
+        "stats": mgr.get_stats(),
+    }
+
+
 @router.post("/block/{ip_address}", status_code=status.HTTP_200_OK)
 async def block_ip(
     request: Request,
     ip_address: str,
-    duration: int = 3600,
+    payload: BlockIPRequest = BlockIPRequest(),
     token: dict = Depends(require_admin)
 ):
-    logger.info(f"Blocking IP {ip_address} for {duration} seconds")
-    return {
-        "status": "success",
-        "ip_address": ip_address,
-        "blocked_until": datetime.now() + timedelta(seconds=duration)
-    }
+    """
+    Block an IP at the eBPF kernel level (instant hardware-speed drop).
+    Admin only.
+    """
+    from modules.firewall.engine.ip_blocklist import get_blocklist_manager
+    mgr = get_blocklist_manager()
+    try:
+        result = await mgr.block_ip(
+            ip=ip_address,
+            reason=payload.reason,
+            blocked_by=token.get("sub", "admin"),
+            duration_seconds=payload.duration_seconds,
+        )
+        logger.info(f"[API] Blocked {ip_address}: {payload.reason}")
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"block_ip error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/block/{ip_address}", status_code=status.HTTP_204_NO_CONTENT)
-async def unblock_ip(request: Request, ip_address: str, token: dict = Depends(require_admin)):
-    logger.info(f"Unblocking IP {ip_address}")
-    return {"status": "success"}
+
+@router.delete("/block/{ip_address}", status_code=status.HTTP_200_OK)
+async def unblock_ip(
+    request: Request,
+    ip_address: str,
+    token: dict = Depends(require_admin)
+):
+    """
+    Unblock a previously blocked IP at the eBPF kernel level.
+    Admin only.
+    """
+    from modules.firewall.engine.ip_blocklist import get_blocklist_manager
+    mgr = get_blocklist_manager()
+    try:
+        result = await mgr.unblock_ip(ip_address)
+        logger.info(f"[API] Unblocked {ip_address}")
+        return result
+    except (ValueError, KeyError) as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"unblock_ip error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/block/all", status_code=status.HTTP_200_OK)
+async def unblock_all_ips(request: Request, token: dict = Depends(require_admin)):
+    """
+    Clear the ENTIRE blocklist and unblock all IPs.
+    Admin only — use with caution!
+    """
+    from modules.firewall.engine.ip_blocklist import get_blocklist_manager
+    mgr = get_blocklist_manager()
+    try:
+        result = await mgr.unblock_all()
+        logger.warning(f"[API] Entire blocklist cleared by {token.get('sub')}")
+        return result
+    except Exception as e:
+        logger.error(f"unblock_all error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
