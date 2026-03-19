@@ -112,5 +112,92 @@ export const vpnApi = {
 /* ── HTTP Inspection ───────────────────────────────── */
 export const httpApi = {
   status: ()       => api.get('/api/v1/http_inspection/status'),
+  config: ()       => api.get('/api/v1/http_inspection/config'),
+  updateConfig: (d) => api.put('/api/v1/http_inspection/config', d),
   patterns: ()     => api.get('/api/v1/http_inspection/patterns'),
+  addPattern: (d)  => api.post('/api/v1/http_inspection/patterns', d),
+  deletePattern: (id) => api.delete(`/api/v1/http_inspection/patterns/${id}`),
+};
+
+/* ── Web Filter ────────────────────────────────────── */
+export const webFilterApi = {
+  status: ()       => api.get('/api/v1/web_filter/status'),
+};
+
+/* ── Email Security ────────────────────────────────── */
+export const emailApi = {
+  status:           () => api.get('/api/v1/email_security/status'),
+  config:           () => api.get('/api/v1/email_security/config'),
+  updateConfig:     (d) => api.put('/api/v1/email_security/config', d),
+  whitelist:        () => api.get('/api/v1/email_security/whitelist'),
+  addWhitelist:     (d) => api.post('/api/v1/email_security/whitelist', d),
+  removeWhitelist:  (type, value) => api.delete(`/api/v1/email_security/whitelist/${type}/${encodeURIComponent(value)}`),
+};
+
+/* ── Malware AV ────────────────────────────────────── */
+export const malwareApi = {
+  status: () => api.get('/api/v1/malware_av/status'),
+  config: () => api.get('/api/v1/malware_av/config'),
+  updateConfig: (d) => api.put('/api/v1/malware_av/config', d),
+};
+
+/* ── UBA (User Behavior) ───────────────────────────── */
+export const ubaApi = {
+  status: ()           => api.get('/api/v1/uba/status'),
+  config: ()           => api.get('/api/v1/uba/config'),
+  updateConfig: (d)    => api.put('/api/v1/uba/config', d),
+  users: (params)      => api.get('/api/v1/uba/users', { params }),
+  userProfile: (name)  => api.get(`/api/v1/uba/users/${name}`),
+  userEvents: (name, p) => api.get(`/api/v1/uba/users/${name}/events`, { params: p }),
+  events: (params)     => api.get('/api/v1/uba/events', { params }),
+  alerts: ()           => api.get('/api/v1/uba/alerts'),
+  resetUser: (name)    => api.delete(`/api/v1/uba/users/${name}/reset`),
+};
+
+/* ── Predictive AI ─────────────────────────────────── */
+export const aiApi = {
+  config: ()           => api.get('/api/v1/ai/config'),
+  updateConfig: (d)    => api.put('/api/v1/ai/config', d),
+  models: ()           => api.get('/api/v1/ai/models'),
+  uploadModel: (id, f) => {
+    const fd = new FormData();
+    fd.append('file', f);
+    return api.post(`/api/v1/ai/models/upload/${id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+};
+
+/* ── SSL Inspection ────────────────────────────────── */
+export const sslApi = {
+  status: ()           => api.get('/api/v1/ssl_inspection/status'),
+  policies: ()         => api.get('/api/v1/ssl-inspection/policies'),
+  createPolicy: (d)    => api.post('/api/v1/ssl-inspection/policies', d),
+  updatePolicy: (id, d) => api.put(`/api/v1/ssl-inspection/policies/${id}`, d),
+  deletePolicy: (id)   => api.delete(`/api/v1/ssl-inspection/policies/${id}`),
+  certificates: ()     => api.get('/api/v1/ssl-inspection/certificates'),
+  uploadCert: (d)      => api.post('/api/v1/ssl-inspection/certificates/upload', d),
+};
+
+/* ── DLP (Data Loss) ───────────────────────────────── */
+export const dlpApi = {
+  status: ()           => api.get('/api/v1/dlp/status'),
+  config: ()           => api.get('/api/v1/dlp/config'),
+  updateConfig: (d)    => api.put('/api/v1/dlp/config', d),
+  rules: ()            => api.get('/api/v1/dlp/rules'),
+  createRule: (d)      => api.post('/api/v1/dlp/rules', d),
+  deleteRule: (id)     => api.delete(`/api/v1/dlp/rules/${id}`),
+};
+
+/* ── QoS (Quality of Service) ──────────────────────── */
+export const qosApi = {
+  status: ()           => api.get('/api/v1/qos/status'),
+  config: ()           => api.get('/api/v1/qos/config'),
+  updateConfig: (d)    => api.put('/api/v1/qos/config', d),
+  stats: ()            => api.get('/api/v1/qos/stats'),
+};
+
+/* ── Proxy ─────────────────────────────────────────── */
+export const proxyApi = {
+  status: ()           => api.get('/api/v1/proxy/status'),
+  config: ()           => api.get('/api/v1/proxy/config'),
+  updateConfig: (d)    => api.put('/api/v1/proxy/config', d),
 };

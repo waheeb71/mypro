@@ -10,6 +10,16 @@ import Login     from './modules/auth/Login';
 import Dashboard from './modules/dashboard/Dashboard';
 import Firewall     from './modules/firewall/Firewall';
 import IPBlocklist  from './modules/firewall/IPBlocklist';
+import WebFilter    from './modules/web_filter/WebFilter';
+import EmailSecurity from './modules/email_security/EmailSecurity';
+import MalwareAV      from './modules/malware_av/MalwareAV';
+import UBA           from './modules/uba/UBA';
+import PredictiveAI  from './modules/predictive_ai/PredictiveAI';
+import SSLInspection from './modules/ssl_inspection/SSLInspection';
+import HTTPInspection from './modules/http_inspection/HTTPInspection';
+import DLP           from './modules/dlp/DLP';
+import QoS           from './modules/qos/QoS';
+import Proxy         from './modules/proxy/Proxy';
 import WAF       from './modules/waf/WAF';
 import IDSIPS    from './modules/ids_ips/IDSIPS';
 import System    from './modules/system/System';
@@ -49,7 +59,17 @@ export default function App() {
             >
               <Route index           element={<Dashboard />} />
               <Route path="firewall"      element={<Firewall />} />
-              <Route path="ip-blocklist" element={<IPBlocklist />} />
+              <Route path="ip-blocklist"  element={<IPBlocklist />} />
+              <Route path="web-filter"    element={<WebFilter />} />
+              <Route path="email"         element={<EmailSecurity />} />
+              <Route path="malware"       element={<MalwareAV />} />
+              <Route path="uba"           element={<UBA />} />
+              <Route path="ai"            element={<PredictiveAI />} />
+              <Route path="ssl"           element={<SSLInspection />} />
+              <Route path="http"          element={<HTTPInspection />} />
+              <Route path="dlp"           element={<DLP />} />
+              <Route path="qos"           element={<QoS />} />
+              <Route path="proxy"         element={<Proxy />} />
               <Route path="waf"      element={<WAF />} />
               <Route path="ids-ips"  element={<IDSIPS />} />
               <Route path="vpn"      element={<VPN />} />

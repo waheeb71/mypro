@@ -1,26 +1,63 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, Shield, ShieldOff, Globe, Wifi, Lock, Mail,
-  Search, Activity, Database, Network, Settings, LogOut, User, Zap
+  Search, Activity, Database, Network, Settings, LogOut, User, Zap,
+  Bug, Gauge, Server, FileText, UserCheck
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import './Shell.css';
 
-const NAV_ITEMS = [
-  { to: '/',              icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/firewall',      icon: Shield,           label: 'Firewall Rules' },
-  { to: '/ip-blocklist',  icon: ShieldOff,        label: 'IP Blocklist' },
-  { to: '/waf',           icon: Globe,            label: 'WAF' },
-  { to: '/ids-ips',       icon: Activity,         label: 'IDS / IPS' },
-  { to: '/dns',           icon: Network,          label: 'DNS Security' },
-  { to: '/vpn',           icon: Lock,             label: 'VPN' },
-  { to: '/email',         icon: Mail,             label: 'Email Security' },
-  { to: '/http',          icon: Search,           label: 'HTTP Inspect' },
-  { to: '/ssl',           icon: Wifi,             label: 'SSL Inspect' },
-  { to: '/ai',            icon: Zap,              label: 'Predictive AI' },
-  { to: '/system',        icon: Settings,         label: 'System' },
-  { to: '/settings',      icon: Database,         label: 'Raw Configs' },
-  { to: '/users',         icon: User,             label: 'Users & RBAC' },
+const NAV_GROUPS = [
+  {
+    label: 'Overview',
+    items: [
+      { to: '/',              icon: LayoutDashboard, label: 'Dashboard' },
+    ]
+  },
+  {
+    label: 'Threat Management',
+    items: [
+      { to: '/firewall',      icon: Shield,           label: 'Firewall Rules' },
+      { to: '/ip-blocklist',  icon: ShieldOff,        label: 'IP Blocklist' },
+      { to: '/waf',           icon: Globe,            label: 'WAF' },
+      { to: '/ids-ips',       icon: Activity,         label: 'IDS / IPS' },
+      { to: '/malware',       icon: Bug,              label: 'Malware / AV' },
+    ]
+  },
+  {
+    label: 'Network Services',
+    items: [
+      { to: '/dns',           icon: Network,          label: 'DNS Security' },
+      { to: '/vpn',           icon: Lock,             label: 'VPN' },
+      { to: '/proxy',         icon: Server,           label: 'Forward Proxy' },
+      { to: '/email',         icon: Mail,             label: 'Email Security' },
+      { to: '/web-filter',    icon: Globe,            label: 'Web Filter' },
+      { to: '/qos',           icon: Gauge,            label: 'QoS / Shaping' },
+    ]
+  },
+  {
+    label: 'Inspection',
+    items: [
+      { to: '/http',          icon: Search,           label: 'HTTP Inspect' },
+      { to: '/ssl',           icon: Wifi,             label: 'SSL Inspect' },
+      { to: '/dlp',           icon: FileText,         label: 'DLP' },
+    ]
+  },
+  {
+    label: 'Intelligence',
+    items: [
+      { to: '/ai',            icon: Zap,              label: 'Predictive AI' },
+      { to: '/uba',           icon: UserCheck,        label: 'User Behavior' },
+    ]
+  },
+  {
+    label: 'Administration',
+    items: [
+      { to: '/system',        icon: Settings,         label: 'System' },
+      { to: '/settings',      icon: Database,         label: 'Raw Configs' },
+      { to: '/users',         icon: User,             label: 'Users & RBAC' },
+    ]
+  }
 ];
 
 export default function Shell() {
@@ -38,16 +75,21 @@ export default function Shell() {
         </NavLink>
 
         <nav className="sidebar-nav">
-          {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
-            >
-              <Icon className="nav-item-icon" size={20} />
-              <span className="nav-item-label">{label}</span>
-            </NavLink>
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label} className="nav-group">
+              <div className="nav-group-label">{group.label}</div>
+              {group.items.map(({ to, icon: Icon, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={to === '/'}
+                  className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                >
+                  <Icon className="nav-item-icon" size={20} />
+                  <span className="nav-item-label">{label}</span>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 
