@@ -56,6 +56,7 @@ from modules.waf.engine.core.fingerprinting       import AdvancedFingerprinting
 from modules.waf.engine.core.ato_protector        import ATOProtector
 from modules.waf.engine.core.rate_limiter         import AdaptiveRateLimiter
 from modules.waf.engine.core.shadow_autopilot     import ShadowAutopilot
+from modules.waf.engine.core.self_learning_logger  import WAFSelfLearningLogger
 
 if TYPE_CHECKING:
     from modules.ids_ips.engine.core.threat_intel import ThreatIntelCache
@@ -162,6 +163,20 @@ class WAFInspectorPlugin(InspectorPlugin):
             self.cfg.enabled, self.cfg.mode
         )
         logger.info(self.cfg.summary())
+
+        # ─ Self-Learning Logger ─ (disabled by default, controlled by waf.yaml) ─
+        self.self_logger: Optional[WAFSelfLearningLogger] = None
+        if self.cfg.self_learning.enabled:
+            try:
+                from system.database.database import SessionLocal
+                self.self_logger = WAFSelfLearningLogger(
+                    settings=self.cfg.self_learning,
+                    db_session_factory=SessionLocal,
+                )
+                logger.info("WAF Self-Learning Logger activated (max_records=%d)",
+                            self.cfg.self_learning.max_records)
+            except Exception as e:
+                logger.warning("WAF Self-Learning Logger init failed: %s", e)
 
         # ── Session Log Collector (for GNN training data) ─
         global _gnn_log_collector
@@ -531,6 +546,36 @@ class WAFInspectorPlugin(InspectorPlugin):
                     }))
             except Exception as e:
                 logger.debug("Failed to dispatch live event: %s", e)
+
+        # ─ Self-Learning Record ─ (gated by settings) ─
+        if self.self_logger is not None:
+            try:
+                auto_label: Optional[int] = None
+                label_src              = "auto"
+                if action == InspectionAction.BLOCK:
+                    auto_label = 1
+                    label_src  = "auto_block"
+                elif action == InspectionAction.ALLOW and not findings:
+                    auto_label = 0
+                    label_src  = "auto_allow"
+
+                self.self_logger.record(
+                    src_ip         = context.src_ip,
+                    request_path   = request_path,
+                    request_method = context.metadata.get("request_method", "GET"),
+                    payload        = decoded_text[:4096] if decoded_text else "",
+                    features       = waf_features,
+                    risk_score     = risk_score,
+                    decision       = decision.value,
+                    nlp_score      = nlp_score,
+                    bot_score      = bot_score,
+                    anomaly_score  = anomaly_score,
+                    reputation     = reputation_score,
+                    label          = auto_label,
+                    label_source   = label_src,
+                )
+            except Exception:
+                pass  # never let the logger break the WAF
 
         return result
 

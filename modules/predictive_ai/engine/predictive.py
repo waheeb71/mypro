@@ -14,13 +14,32 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import numpy as np
 
-# Path to the forecaster model (centralized in ml/models/)
+# ── Resolve the forecaster model path robustly ─────────────────────────────
+# The project root is 3 levels above this file:
+#   modules/predictive_ai/engine/predictive.py → ../../.. = project root
+_THIS_FILE   = os.path.abspath(__file__)
+_MODULE_DIR  = os.path.dirname(os.path.dirname(_THIS_FILE))   # modules/predictive_ai/
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(_MODULE_DIR)) # <project root>
+
+# Probe in priority order — first match wins
+_CANDIDATE_PATHS = [
+    os.path.join(_PROJECT_ROOT, 'ml', 'models', 'predictive_ai', 'attack_forecaster.pkl'),
+    os.path.join(_MODULE_DIR,   'models', 'attack_forecaster.pkl'),
+    # Also attempt via the central registry (may raise if ml.models is not importable)
+]
+
 try:
     from ml.models import get_model_path as _get_model_path
-    _FORECASTER_MODEL_PATH = _get_model_path('predictive_ai', 'attack_forecaster.pkl')
-except (FileNotFoundError, ValueError, ImportError):
-    _MODULE_DIR = os.path.dirname(os.path.dirname(__file__))
-    _FORECASTER_MODEL_PATH = os.path.join(_MODULE_DIR, 'models', 'attack_forecaster.pkl')
+    _CANDIDATE_PATHS.insert(0, _get_model_path('predictive_ai', 'attack_forecaster.pkl'))
+except Exception:
+    pass
+
+# Pick the first file that actually exists on disk
+_FORECASTER_MODEL_PATH = next(
+    (p for p in _CANDIDATE_PATHS if os.path.exists(p)),
+    _CANDIDATE_PATHS[0]   # fall back to first candidate for error message clarity
+)
+
 
 @dataclass
 class ForecastResult:
