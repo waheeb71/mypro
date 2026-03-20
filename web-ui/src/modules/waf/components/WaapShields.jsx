@@ -18,10 +18,12 @@ export default function WaapShields({ status, handleToggle, handleGnnToggle }) {
         <FeatureToggle label="Adaptive Rate Limiter" enabled={status?.features?.waap_rate_limit} onChange={v => handleToggle('rate_limit', v)} />
         
         <FeatureToggle label="GNN (Graph Neural Network)" enabled={status?.features?.gnn} onChange={v => handleGnnToggle(v)} />
+        <FeatureToggle label="Self-Learning Engine" enabled={status?.features?.self_learning} onChange={v => handleToggle('self_learning', v)} />
       </div>
 
       <div className="card" style={{ padding: 'var(--sp-5)' }}>
          <div className="section-title" style={{ marginBottom: 'var(--sp-4)', display: 'flex', alignItems: 'center', gap: 8 }}>
+
             <AlertTriangle size={17} style={{ color: 'var(--warning)' }} /> Rate Limit Configurations
          </div>
          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--sp-5)' }}>

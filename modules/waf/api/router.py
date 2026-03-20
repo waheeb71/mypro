@@ -108,10 +108,12 @@ async def waf_status(token: dict = Depends(require_waf)):
                 "waap_fingerprint": cfg.fingerprint.enabled,
                 "waap_ato":       cfg.ato_protector.enabled,
                 "waap_rate_limit": cfg.rate_limiter.enabled,
+                "self_learning":  cfg.self_learning.enabled,
             },
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # ── Live WebSocket Dashboard ───────────────────────
 
@@ -365,7 +367,7 @@ async def apply_rate_limit_config(request: RateLimitConfigRequest, token: dict =
 
 @router.put("/waap/toggle/{feature}")
 async def toggle_waap_feature(feature: str, request: ToggleRequest, token: dict = Depends(require_admin)):
-    """Toggle specific WAAP features (api_schema, fingerprint, ato, rate_limit)."""
+    """Toggle specific WAAP features (api_schema, fingerprint, ato, rate_limit, self_learning)."""
     cfg = _get_waf_settings()
     if feature == "api_schema":
         cfg.api_schema.enabled = request.enabled
@@ -375,12 +377,15 @@ async def toggle_waap_feature(feature: str, request: ToggleRequest, token: dict 
         cfg.ato_protector.enabled = request.enabled
     elif feature == "rate_limit":
         cfg.rate_limiter.enabled = request.enabled
+    elif feature == "self_learning":
+        cfg.self_learning.enabled = request.enabled
     else:
         raise HTTPException(status_code=400, detail=f"Unknown WAAP feature: {feature}")
         
     cfg.save()  # Persist change
     logger.info("WAAP feature '%s' toggled to %s (Persisted)", feature, request.enabled)
     return {"status": "ok", "feature": feature, "enabled": request.enabled}
+
 
 @router.post("/waap/api_schema/upload")
 async def upload_api_schema(request: APISchemaUploadRequest, token: dict = Depends(require_admin)):
