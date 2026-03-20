@@ -110,6 +110,50 @@ async def update_vpn_config(
     # for networking changes.
     return {"message": "VPN configuration updated. Restart may be required for some changes."}
 
+@router.post("/start")
+async def start_vpn(request: Request, db: Session = Depends(get_db), token: dict = Depends(require_admin)):
+    """Start and configure the WireGuard interface from DB config"""
+    vpn_mgr = _get_vpn_manager(request)
+    if not vpn_mgr:
+        raise HTTPException(status_code=503, detail="VPN functionality is not available")
+    
+    config = db.query(VPNConfig).first()
+    if not config or not config.enabled:
+        raise HTTPException(status_code=400, detail="VPN is not enabled in DB configuration")
+        
+    success = vpn_mgr.setup_interface(ip_address=config.server_ip, port=config.listen_port)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to start WireGuard interface")
+        
+    # Re-apply all enabled peers
+    peers = db.query(VPNPeer).filter_by(enabled=True).all()
+    count: int = 0
+    for peer in peers:
+        p_cfg = PeerConfig(
+            public_key=peer.public_key,
+            allowed_ips=peer.allowed_ips,
+            endpoint=peer.endpoint,
+            preshared_key=peer.preshared_key,
+            persistent_keepalive=peer.persistent_keepalive
+        )
+        if vpn_mgr.add_peer(p_cfg):
+            count += 1
+            
+    return {"message": f"VPN started successfully with {count} peers configured"}
+
+@router.post("/stop")
+async def stop_vpn(request: Request, token: dict = Depends(require_admin)):
+    """Stop and teardown the WireGuard interface"""
+    vpn_mgr = _get_vpn_manager(request)
+    if not vpn_mgr:
+        raise HTTPException(status_code=503, detail="VPN functionality is not available")
+        
+    success = vpn_mgr.teardown()
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to tear down WireGuard interface")
+        
+    return {"message": "VPN interface stopped successfully"}
+
 @router.get("/peers")
 async def list_vpn_peers(db: Session = Depends(get_db), token: dict = Depends(require_vpn)):
     """List all configured VPN peers from database"""
