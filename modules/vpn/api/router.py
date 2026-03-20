@@ -134,8 +134,13 @@ async def start_vpn(request: Request, db: Session = Depends(get_db), token: dict
         raise HTTPException(status_code=503, detail="VPN functionality is not available")
     
     config = db.query(VPNConfig).first()
-    if not config or not config.enabled:
-        raise HTTPException(status_code=400, detail="VPN is not enabled in DB configuration")
+    if not config:
+        config = VPNConfig(enabled=True, interface="wg0", listen_port=51820, server_ip="10.10.0.1/24")
+        db.add(config)
+        db.commit()
+    elif not config.enabled:
+        config.enabled = True
+        db.commit()
         
     success = vpn_mgr.setup_interface(ip_address=config.server_ip, port=config.listen_port)
     if not success:
