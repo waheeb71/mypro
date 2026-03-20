@@ -50,9 +50,25 @@ class VPNConfigRequest(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _get_vpn_manager(request: Request):
-    ngfw = getattr(request.app.state, 'ngfw_app', None)
-    if ngfw and ngfw.vpn_enabled and ngfw.vpn_manager:
+    ngfw = getattr(request.app.state, 'ngfw', None)
+    if not ngfw:
+        return None
+        
+    vpn_mgr = getattr(ngfw, 'vpn_manager', None)
+    if vpn_mgr:
+        return vpn_mgr
+        
+    # Lazy initialization: if it was disabled at boot but requested now
+    try:
+        from modules.vpn.engine.wireguard import WireGuardManager
+        import logging
+        logger = logging.getLogger('vpn_api')
+        ngfw.vpn_enabled = True
+        ngfw.vpn_manager = WireGuardManager(interface='wg0', logger=logger)
         return ngfw.vpn_manager
+    except BaseException:
+        pass
+        
     return None
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -127,7 +143,7 @@ async def start_vpn(request: Request, db: Session = Depends(get_db), token: dict
         
     # Re-apply all enabled peers
     peers = db.query(VPNPeer).filter_by(enabled=True).all()
-    count: int = 0
+    count = 0  # type: ignore
     for peer in peers:
         p_cfg = PeerConfig(
             public_key=peer.public_key,
