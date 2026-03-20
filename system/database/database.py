@@ -529,11 +529,31 @@ class DatabaseManager:
 # Delayed import avoids circular dependencies.
 
 def _register_module_models():
-    """Called once at module level to ensure all models are in Base.metadata."""
-    try:
-        import modules.firewall.models  # registers FirewallRule  # noqa: F401
-    except Exception:
-        pass  # module not present or import error — tables won't be created
+    """
+    Auto-discover models/ in each module directory to ensure they are
+    registered in Base.metadata for automatic table creation.
+    """
+    import os
+    from pathlib import Path
+    import importlib
+
+    base_dir = Path(__file__).parent.parent.parent
+    modules_dir = base_dir / "modules"
+
+    if not modules_dir.exists():
+        return
+
+    for entry in os.listdir(modules_dir):
+        mod_path = modules_dir / entry
+        if mod_path.is_dir() and (mod_path / "models").exists():
+            # Try to import modules.<entry>.models
+            try:
+                full_module_name = f"modules.{entry}.models"
+                importlib.import_module(full_module_name)
+                # logger.debug(f"  ✅ Registered models for module: {entry}")
+            except Exception:
+                # Some modules might have models dir but no __init__.py or other issues
+                pass
 
 
 _register_module_models()
