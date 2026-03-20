@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Play, Square, Settings, Users, Plus, Trash2, Key, Server, Hash, RefreshCw, X, AlertCircle } from 'lucide-react';
+import { vpnApi } from '../../services/api';
 import './VPN.css';
 
 export default function VPN() {
@@ -44,50 +45,33 @@ export default function VPN() {
   };
 
   const fetchStatus = async () => {
-    const res = await fetch('/api/v1/vpn/status', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setStatus(data.status);
-      if (data.interface) setInterfaceName(data.interface);
-    }
+    try {
+      const res = await vpnApi.status();
+      setStatus(res.data.status);
+      if (res.data.interface) setInterfaceName(res.data.interface);
+    } catch(e) { }
   };
 
   const fetchConfig = async () => {
-    const res = await fetch('/api/v1/vpn/config', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.server_ip) setConfig(data);
-    }
+    try {
+      const res = await vpnApi.config();
+      if (res.data.server_ip) setConfig(res.data);
+    } catch(e) { }
   };
 
   const fetchPeers = async () => {
-    const res = await fetch('/api/v1/vpn/peers', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setPeers(data.peers || []);
-    }
+    try {
+      const res = await vpnApi.peers();
+      setPeers(res.data.peers || []);
+    } catch(e) { }
   };
 
   // Actions
   const handleToggleVPN = async () => {
     setActionLoading(true);
     try {
-      const endpoint = isActive ? '/api/v1/vpn/stop' : '/api/v1/vpn/start';
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || `Failed to ${isActive ? 'stop' : 'start'} VPN`);
-      }
+      if (isActive) await vpnApi.stop();
+      else await vpnApi.start();
       
       // Give system a second to apply before fetching status
       setTimeout(() => {
@@ -95,7 +79,7 @@ export default function VPN() {
         setActionLoading(false);
       }, 500);
     } catch (err) {
-      alert(err.message);
+      alert(err.response?.data?.detail || err.message);
       setActionLoading(false);
     }
   };
@@ -104,22 +88,10 @@ export default function VPN() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const res = await fetch('/api/v1/vpn/config', {
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(config)
-      });
-      
-      if (res.ok) {
-        alert("Configuration saved successfully. If VPN is active, restart it to apply changes.");
-      } else {
-        throw new Error("Failed to save config");
-      }
+      await vpnApi.updateConfig(config);
+      alert("Configuration saved successfully. If VPN is active, restart it to apply changes.");
     } catch (err) {
-      alert(err.message);
+      alert(err.response?.data?.detail || err.message);
     } finally {
       setActionLoading(false);
     }
@@ -134,26 +106,14 @@ export default function VPN() {
         allowed_ips: newPeer.allowed_ips.split(',').map(ip => ip.trim())
       };
 
-      const res = await fetch('/api/v1/vpn/peers', {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formattedPeer)
-      });
+      await vpnApi.addPeer(formattedPeer);
       
-      if (res.ok) {
-        fetchPeers();
-        setShowAddPeer(false);
-        setNewPeer({ name: "", public_key: "", allowed_ips: "10.10.0.x/32", endpoint: "", persistent_keepalive: 25 });
-        if (isActive) setTimeout(fetchStatus, 500);
-      } else {
-        const err = await res.json();
-        throw new Error(err.detail || "Failed to add peer");
-      }
+      fetchPeers();
+      setShowAddPeer(false);
+      setNewPeer({ name: "", public_key: "", allowed_ips: "10.10.0.x/32", endpoint: "", persistent_keepalive: 25 });
+      if (isActive) setTimeout(fetchStatus, 500);
     } catch (err) {
-      alert(err.message);
+      alert(err.response?.data?.detail || err.message);
     } finally {
       setActionLoading(false);
     }
@@ -164,19 +124,11 @@ export default function VPN() {
     
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/v1/vpn/peers/${encodeURIComponent(pubkey)}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      
-      if (res.ok) {
-        fetchPeers();
-        if (isActive) setTimeout(fetchStatus, 500);
-      } else {
-        throw new Error("Failed to remove peer");
-      }
+      await vpnApi.removePeer(pubkey);
+      fetchPeers();
+      if (isActive) setTimeout(fetchStatus, 500);
     } catch (err) {
-      alert(err.message);
+      alert(err.response?.data?.detail || err.message);
     } finally {
       setActionLoading(false);
     }
@@ -184,15 +136,9 @@ export default function VPN() {
 
   const handleGenerateKeys = async () => {
     try {
-      const res = await fetch('/api/v1/vpn/keys/generate', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setNewPeer(prev => ({ ...prev, public_key: data.public_key }));
-        alert(`New Keypair Generated!\n\nPrivate Key (Give to Client ONLY):\n${data.private_key}\n\nPublic Key (Saved): ${data.public_key}`);
-      }
+      const res = await vpnApi.generateKeys();
+      setNewPeer(prev => ({ ...prev, public_key: res.data.public_key }));
+      alert(`New Keypair Generated!\n\nPrivate Key (Give to Client ONLY):\n${res.data.private_key}\n\nPublic Key (Saved): ${res.data.public_key}`);
     } catch (err) {
       alert("Failed to generate keys");
     }
