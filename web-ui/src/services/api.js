@@ -88,6 +88,15 @@ export const wafApi = {
   trainingStatus: ()    => api.get('/api/v1/waf/gnn/train/status'),
   activateModel: (data) => api.put('/api/v1/waf/gnn/activate', data),
   toggleGnn: (enabled)  => api.put('/api/v1/waf/gnn/toggle', { enabled }),
+  
+  // WAAP Controls
+  toggleWaapFeature: (feature, enabled) => api.put(`/api/v1/waf/waap/toggle/${feature}`, { enabled }),
+  updateRateLimit: (data) => api.put('/api/v1/waf/waap/rate_limiter/config', data),
+  
+  // Shadow Autopilot
+  startShadowMode: (hours) => api.post('/api/v1/waf/waap/shadow_mode/start', { hours }),
+  shadowModeStatus: () => api.get('/api/v1/waf/waap/shadow_mode/status'),
+  exportShadowSchema: () => api.get('/api/v1/waf/waap/shadow_mode/export'),
 };
 
 /* ── IDS/IPS ───────────────────────────────────────── */

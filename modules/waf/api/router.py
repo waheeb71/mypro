@@ -52,6 +52,9 @@ class APISchemaUploadRequest(BaseModel):
     endpoint: str
     schema_definition: Dict[str, Any]
 
+class ShadowModeStartRequest(BaseModel):
+    hours: int = 72
+
 # ── Lazy imports (avoid circular imports) ───────────
 
 def _get_waf_settings():
@@ -74,6 +77,13 @@ def _get_gnn_inference():
     except (ImportError, AttributeError):
         return None
 
+def _get_shadow_autopilot():
+    """Retrieve the global Shadow Autopilot instance."""
+    try:
+        from modules.waf.engine.waf_inspector import _live_shadow_autopilot
+        return _live_shadow_autopilot
+    except (ImportError, AttributeError):
+        return None
 
 # ── WAF Core Endpoints ─────────────────────────────
 
@@ -327,7 +337,8 @@ async def toggle_gnn(request: ToggleRequest, token: dict = Depends(require_admin
     try:
         cfg = _get_waf_settings()
         cfg.gnn.enabled = request.enabled
-        logger.info("GNN runtime toggle → %s", "ENABLED" if request.enabled else "DISABLED")
+        cfg.save()  # Persist change
+        logger.info("GNN runtime toggle → %s (Persisted)", "ENABLED" if request.enabled else "DISABLED")
         return {
             "status":      "ok",
             "gnn_enabled": cfg.gnn.enabled,
@@ -346,7 +357,8 @@ async def apply_rate_limit_config(request: RateLimitConfigRequest, token: dict =
     cfg.rate_limiter.ip_rate_limit = request.ip_rate_limit
     cfg.rate_limiter.user_rate_limit = request.user_rate_limit
     cfg.rate_limiter.adaptive_ratelimit = request.adaptive_ratelimit
-    logger.info("WAAP Rate Limits dynamically updated")
+    cfg.save()  # Persist change
+    logger.info("WAAP Rate Limits dynamically updated and persisted")
     return {"status": "ok", "message": "Rate limits updated successfully"}
 
 @router.put("/waap/toggle/{feature}")
@@ -364,7 +376,8 @@ async def toggle_waap_feature(feature: str, request: ToggleRequest, token: dict 
     else:
         raise HTTPException(status_code=400, detail=f"Unknown WAAP feature: {feature}")
         
-    logger.info("WAAP feature '%s' toggled to %s", feature, request.enabled)
+    cfg.save()  # Persist change
+    logger.info("WAAP feature '%s' toggled to %s (Persisted)", feature, request.enabled)
     return {"status": "ok", "feature": feature, "enabled": request.enabled}
 
 @router.post("/waap/api_schema/upload")
@@ -382,4 +395,64 @@ async def upload_api_schema(request: APISchemaUploadRequest, token: dict = Depen
         return {"status": "ok", "message": f"Schema accepted for {request.endpoint}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ── Shadow Autopilot Endpoints ─────────────────────
+
+@router.post("/waap/shadow_mode/start")
+async def start_shadow_mode(request: ShadowModeStartRequest, token: dict = Depends(require_admin)):
+    """
+    Start the Shadow Autopilot learning mode.
+    The WAF will observe traffic to build a structural profile.
+    """
+    autopilot = _get_shadow_autopilot()
+    if not autopilot:
+        raise HTTPException(status_code=500, detail="Shadow Autopilot is not initialized.")
+        
+    cfg = _get_waf_settings()
+    cfg.shadow_mode.enabled = True
+    cfg.shadow_mode.observation_window_hours = request.hours
+    cfg.save()  # Persist toggle to prevent state loss
+    
+    autopilot.start_learning(hours=request.hours)
+    logger.info(f"Shadow Autopilot activated for {request.hours} hours.")
+    
+    return {
+        "status": "started", 
+        "hours": request.hours, 
+        "message": "Shadow Autopilot is now silently observing traffic to build the API Schema."
+    }
+
+@router.get("/waap/shadow_mode/status")
+async def shadow_mode_status(token: dict = Depends(require_waf)):
+    """Get the live status and progress of the Shadow Autopilot."""
+    autopilot = _get_shadow_autopilot()
+    if not autopilot:
+        return {"status": "not_initialized"}
+        
+    return autopilot.get_progress()
+
+@router.get("/waap/shadow_mode/export")
+async def export_shadow_schema(token: dict = Depends(require_admin)):
+    """
+    Export the synthesized JSON Schema learned by the Autopilot.
+    This can be reviewed and Enforced manually using the standard Schema Validator.
+    """
+    autopilot = _get_shadow_autopilot()
+    if not autopilot:
+        raise HTTPException(status_code=500, detail="Shadow Autopilot is not initialized.")
+        
+    generated_schema = autopilot.generate_schema()
+    
+    # Automatically disable learning if it's done or being exported
+    cfg = _get_waf_settings()
+    if not autopilot.is_learning() and cfg.shadow_mode.enabled:
+        cfg.shadow_mode.enabled = False
+        cfg.save()
+        
+    return {
+        "status": "success",
+        "endpoints_learned": len(generated_schema.get("paths", {})),
+        "schema": generated_schema,
+        "message": "Schema perfectly tailored to your application's traffic!"
+    }
 

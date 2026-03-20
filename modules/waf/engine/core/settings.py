@@ -143,6 +143,12 @@ class SelfLearningSettings:
 
 
 @dataclass
+class ShadowModeSettings:
+    enabled:                  bool = False
+    observation_window_hours: int  = 72
+
+
+@dataclass
 class APISchemaValidatorSettings:
     enabled:          bool = True
     max_payload_size: int  = 524288  # 512KB
@@ -229,6 +235,7 @@ class WAFSettings:
     
     risk_scoring:   RiskScoringSettings   = field(default_factory=RiskScoringSettings)
     self_learning:  SelfLearningSettings  = field(default_factory=SelfLearningSettings)
+    shadow_mode:    ShadowModeSettings    = field(default_factory=ShadowModeSettings)
     performance:    PerformanceSettings   = field(default_factory=PerformanceSettings)
     whitelist:      AccessListSettings    = field(default_factory=AccessListSettings)
     blacklist:      AccessListSettings    = field(default_factory=AccessListSettings)
@@ -340,6 +347,48 @@ class WAFSettings:
         fresh = WAFSettings.load(self._config_path)
         self.__dict__.update(fresh.__dict__)
         logger.info("WAF settings reloaded")
+
+    def save(self) -> None:
+        """Persist runtime changes to waf.local.yaml to survive reboots."""
+        try:
+            import yaml
+            import os
+            # Build an override dictionary for the modified features
+            override = {
+                "waf": {
+                    "enabled": self.enabled,
+                    "gnn_model": {"enabled": self.gnn.enabled},
+                    "api_schema_validator": {"enabled": self.api_schema.enabled},
+                    "fingerprinting": {"enabled": self.fingerprint.enabled},
+                    "ato_protector": {"enabled": self.ato_protector.enabled},
+                    "shadow_mode": {
+                        "enabled": self.shadow_mode.enabled,
+                        "observation_window_hours": self.shadow_mode.observation_window_hours
+                    },
+                    "rate_limiter": {
+                        "enabled": self.rate_limiter.enabled,
+                        "global_rate_limit": self.rate_limiter.global_rate_limit,
+                        "ip_rate_limit": self.rate_limiter.ip_rate_limit,
+                        "user_rate_limit": self.rate_limiter.user_rate_limit,
+                        "adaptive_ratelimit": self.rate_limiter.adaptive_ratelimit
+                    }
+                }
+            }
+            # Merge with existing local config if it exists
+            existing_local = {}
+            if os.path.exists(LOCAL_CONFIG):
+                with open(LOCAL_CONFIG, "r", encoding="utf-8") as f:
+                    existing_local = yaml.safe_load(f) or {}
+            
+            merged = _deep_merge(existing_local, override)
+            
+            os.makedirs(os.path.dirname(LOCAL_CONFIG), exist_ok=True)
+            with open(LOCAL_CONFIG, "w", encoding="utf-8") as f:
+                yaml.dump(merged, f, default_flow_style=False)
+                
+            logger.info("WAF settings saved persistently to %s", LOCAL_CONFIG)
+        except Exception as e:
+            logger.error("Failed to save WAF settings persistently: %s", e)
 
     @classmethod
     def _from_dict(cls, d: dict) -> "WAFSettings":
@@ -483,6 +532,13 @@ class WAFSettings:
             log_challenged = sl.get("log_challenged", True),
             log_allowed    = sl.get("log_allowed", False),
             max_records    = sl.get("max_records", 100_000),
+        )
+
+        # Shadow Mode
+        sh = d.get("shadow_mode", {})
+        s.shadow_mode = ShadowModeSettings(
+            enabled                  = sh.get("enabled", False),
+            observation_window_hours = sh.get("observation_window_hours", 72)
         )
 
         # Performance

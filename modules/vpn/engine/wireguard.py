@@ -23,7 +23,6 @@ class PeerConfig:
 
 class WireGuardManager:
     """Manages WireGuard interfaces and configuration."""
-    
     def __init__(self, interface: str = "wg0", logger: Optional[logging.Logger] = None):
         self.interface = interface
         self.logger = logger or logging.getLogger(self.__class__.__name__)

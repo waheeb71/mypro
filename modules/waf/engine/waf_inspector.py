@@ -55,6 +55,7 @@ from modules.waf.engine.core.api_schema_validator import APISchemaValidator
 from modules.waf.engine.core.fingerprinting       import AdvancedFingerprinting
 from modules.waf.engine.core.ato_protector        import ATOProtector
 from modules.waf.engine.core.rate_limiter         import AdaptiveRateLimiter
+from modules.waf.engine.core.shadow_autopilot     import ShadowAutopilot
 
 if TYPE_CHECKING:
     from modules.ids_ips.engine.core.threat_intel import ThreatIntelCache
@@ -68,6 +69,7 @@ import asyncio
 # ── Module-level singletons (used by API router for live reload) ──
 _gnn_log_collector = None   # type: Optional['SessionLogCollector']
 _live_gnn_model    = None   # type: Optional['WAFGNNInference']
+_live_shadow_autopilot = None # type: Optional['ShadowAutopilot']
 
 
 logger = logging.getLogger(__name__)
@@ -178,6 +180,17 @@ class WAFInspectorPlugin(InspectorPlugin):
         global _live_gnn_model
         if self.gnn_model:
             _live_gnn_model = self.gnn_model
+            
+        # ── Shadow Autopilot Initialization ────────────────
+        global _live_shadow_autopilot
+        self.autopilot = ShadowAutopilot(
+            observation_window_hours=self.cfg.shadow_mode.observation_window_hours
+        )
+        _live_shadow_autopilot = self.autopilot
+        
+        # If enabled via settings, forcefully resume learning
+        if self.cfg.shadow_mode.enabled:
+            self.autopilot.start_learning(hours=self.cfg.shadow_mode.observation_window_hours)
 
     # ── InspectorPlugin interface ───────────────
 
@@ -346,6 +359,16 @@ class WAFInspectorPlugin(InspectorPlugin):
             prep_meta = {"encoding_layers": [], "iterations": 0,
                          "had_null_bytes": False,
                          "original_length": len(data), "decoded_length": len(data)}
+                         
+        # ── 2.5 SHADOW AUTOPILOT OBSERVATION ─────────────────────────
+        if self.cfg.shadow_mode.enabled and self.autopilot.is_learning():
+            try:
+                # Capture structural data without blocking
+                req_method = context.metadata.get("request_method", "GET")
+                req_headers = context.metadata.get("request_headers", {})
+                self.autopilot.observe(request_path, req_method, req_headers, len(data))
+            except Exception as e:
+                logger.debug("Shadow Autopilot Observe error: %s", e)
 
         # ── 3. FEATURE EXTRACTION ────────────────────────────────────
         waf_features = {}
