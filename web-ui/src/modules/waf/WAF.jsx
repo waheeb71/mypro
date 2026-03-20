@@ -7,11 +7,9 @@ import { wafApi } from '../../services/api';
 import OverviewTab from './components/OverviewTab';
 import WaapShields from './components/WaapShields';
 import ShadowAutopilot from './components/ShadowAutopilot';
-
 export default function WAF() {
   const [activeTab, setActiveTab] = useState('overview');
   const queryClient = useQueryClient();
-
   const { data: status } = useQuery({
     queryKey: ['waf-status'], queryFn: () => wafApi.status().then(r => r.data),
     retry: false, refetchInterval: 5000

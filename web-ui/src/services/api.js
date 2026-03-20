@@ -95,8 +95,9 @@ export const wafApi = {
   
   // Shadow Autopilot
   startShadowMode: (hours) => api.post('/api/v1/waf/waap/shadow_mode/start', { hours }),
-  shadowModeStatus: () => api.get('/api/v1/waf/waap/shadow_mode/status'),
-  exportShadowSchema: () => api.get('/api/v1/waf/waap/shadow_mode/export'),
+  stopShadowMode:  ()      => api.post('/api/v1/waf/waap/shadow_mode/stop'),
+  shadowModeStatus: ()     => api.get('/api/v1/waf/waap/shadow_mode/status'),
+  exportShadowSchema: ()   => api.get('/api/v1/waf/waap/shadow_mode/export'),
 };
 
 /* ── IDS/IPS ───────────────────────────────────────── */

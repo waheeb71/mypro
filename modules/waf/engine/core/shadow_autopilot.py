@@ -52,6 +52,13 @@ class ShadowAutopilot:
         
         logger.info("WAF Shadow Autopilot started for %s hours.", hours)
 
+    def stop_learning(self) -> None:
+        """Manually stop observation while preserving the collected profile data."""
+        with self._lock:
+            self.learning_enabled = False
+            self.learning_end_time = 0.0
+        logger.info("WAF Shadow Autopilot stopped manually. %d routes profiled.", len(self.profiles))
+
     def is_learning(self) -> bool:
         """Check if autopilot is actively learning."""
         if not self.learning_enabled:

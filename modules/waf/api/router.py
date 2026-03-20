@@ -422,6 +422,30 @@ async def start_shadow_mode(request: ShadowModeStartRequest, token: dict = Depen
         "message": "Shadow Autopilot is now silently observing traffic to build the API Schema."
     }
 
+@router.post("/waap/shadow_mode/stop")
+async def stop_shadow_mode(token: dict = Depends(require_admin)):
+    """
+    Forcefully stop the Shadow Autopilot learning phase.
+    Collected profile data is preserved — you can still export it.
+    """
+    autopilot = _get_shadow_autopilot()
+    if not autopilot:
+        raise HTTPException(status_code=500, detail="Shadow Autopilot is not initialized.")
+    
+    autopilot.stop_learning()
+    
+    cfg = _get_waf_settings()
+    cfg.shadow_mode.enabled = False
+    cfg.save()
+    
+    endpoints_learned = len(autopilot.profiles)
+    logger.info("Shadow Autopilot stopped manually. Endpoints profiled: %s", endpoints_learned)
+    return {
+        "status": "stopped",
+        "endpoints_learned": endpoints_learned,
+        "message": "Autopilot stopped. You can still export the schema."
+    }
+
 @router.get("/waap/shadow_mode/status")
 async def shadow_mode_status(token: dict = Depends(require_waf)):
     """Get the live status and progress of the Shadow Autopilot."""
