@@ -31,7 +31,7 @@ modules:
   predictive_ai:
     enabled: true
   vpn:
-    enabled: false
+    enabled: true
   waf:
     enabled: true
 
