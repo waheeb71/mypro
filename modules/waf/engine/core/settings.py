@@ -134,6 +134,14 @@ class RiskScoringSettings:
 
 
 @dataclass
+class DeceptionEngineSettings:
+    enabled:             bool  = True
+    injection_threshold: float = 0.40
+    ttl_seconds:         int   = 3600
+
+
+
+@dataclass
 class SelfLearningSettings:
     enabled:        bool = True
     log_blocked:    bool = True
@@ -234,6 +242,7 @@ class WAFSettings:
     rate_limiter:   RateLimiterSettings        = field(default_factory=RateLimiterSettings)
     
     risk_scoring:   RiskScoringSettings   = field(default_factory=RiskScoringSettings)
+    deception_engine: DeceptionEngineSettings = field(default_factory=DeceptionEngineSettings)
     self_learning:  SelfLearningSettings  = field(default_factory=SelfLearningSettings)
     shadow_mode:    ShadowModeSettings    = field(default_factory=ShadowModeSettings)
     performance:    PerformanceSettings   = field(default_factory=PerformanceSettings)

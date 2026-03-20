@@ -32,6 +32,7 @@ class ConfigSchema(BaseModel):
     mode: str = Field("blocking", description="monitoring or blocking")
     enable_l3_anomaly: bool = True
     enable_l7_dpi: bool = True
+    deception_enabled: bool = True
     anomaly_threshold: float = 0.5
     class Config:
         orm_mode = True

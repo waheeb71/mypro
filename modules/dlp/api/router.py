@@ -33,6 +33,7 @@ class DLPRuleResponse(DLPRuleBase):
 class DLPConfigSchema(BaseModel):
     is_active: bool = True
     block_on_match: bool = True
+    deception_enabled: bool = True
     class Config:
         orm_mode = True
 

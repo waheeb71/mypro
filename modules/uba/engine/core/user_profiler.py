@@ -80,6 +80,7 @@ class UserProfiler:
         from modules.uba.engine.detectors.privilege_detector import PrivilegeDetector
         from modules.uba.engine.detectors.peer_detector      import PeerGroupDetector
         from modules.uba.engine.core.risk_aggregator         import RiskAggregator
+        from modules.uba.engine.core.uba_deception           import UBAHoneytokenEngine
 
         privileged_svcs = None
         if config and hasattr(config, 'privileged_services'):
@@ -99,6 +100,7 @@ class UserProfiler:
             thresholds=thresholds or None,
             ema_alpha=alpha,
         )
+        self.deception_engine = UBAHoneytokenEngine()
 
     # ── Public interface ──────────────────────────────────────────────────────
 
@@ -152,13 +154,23 @@ class UserProfiler:
 
         # 4. Determine action
         mode = "monitor"
+        deception_enabled = True
         if self.cfg:
             mode = getattr(self.cfg, 'mode', 'monitor')
+            deception_enabled = getattr(self.cfg, 'deception_enabled', True)
+            
         action = "allow"
+        bait = None
+        
         if mode == "enforce" and risk_level in ("critical", "high"):
             action = "block" if risk_level == "critical" else "alert"
         elif all_flags:
             action = "alert"
+            
+        # Deception injection: Suspected malicious intent (high risk but not critical)
+        if deception_enabled and risk_level == "high" and mode == "enforce":
+            bait = self.deception_engine.generate_contextual_bait(username, source_ip, target_service)
+            action = "inject_bait"
 
         result.anomaly_score       = round(raw_score, 4)
         result.risk_contribution   = round(risk_contribution, 2)
@@ -175,6 +187,9 @@ class UserProfiler:
                 "peer": round(pe_score, 3),
             }
         }
+        
+        if bait:
+            result.details["deception_bait"] = bait
 
         # 5. Update profile baseline
         self._update_profile(

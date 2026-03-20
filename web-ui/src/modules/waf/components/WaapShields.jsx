@@ -19,6 +19,7 @@ export default function WaapShields({ status, handleToggle, handleGnnToggle }) {
         
         <FeatureToggle label="GNN (Graph Neural Network)" enabled={status?.features?.gnn} onChange={v => handleGnnToggle(v)} />
         <FeatureToggle label="Self-Learning Engine" enabled={status?.features?.self_learning} onChange={v => handleToggle('self_learning', v)} />
+        <FeatureToggle label="Intent-Proving Deception Engine" enabled={status?.features?.deception_engine} onChange={v => handleToggle('deception_engine', v)} />
       </div>
 
       <div className="card" style={{ padding: 'var(--sp-5)' }}>

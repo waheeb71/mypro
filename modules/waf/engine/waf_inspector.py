@@ -57,6 +57,7 @@ from modules.waf.engine.core.ato_protector        import ATOProtector
 from modules.waf.engine.core.rate_limiter         import AdaptiveRateLimiter
 from modules.waf.engine.core.shadow_autopilot     import ShadowAutopilot
 from modules.waf.engine.core.self_learning_logger  import WAFSelfLearningLogger
+from modules.waf.engine.core.deception_engine      import DeceptionEngine
 
 if TYPE_CHECKING:
     from modules.ids_ips.engine.core.threat_intel import ThreatIntelCache
@@ -177,6 +178,12 @@ class WAFInspectorPlugin(InspectorPlugin):
                             self.cfg.self_learning.max_records)
             except Exception as e:
                 logger.warning("WAF Self-Learning Logger init failed: %s", e)
+
+        # ── Deception Engine (Patent PoC) ──
+        self.deception_engine: Optional[DeceptionEngine] = None
+        if getattr(self.cfg, 'deception_engine', None) and self.cfg.deception_engine.enabled:
+            self.deception_engine = DeceptionEngine(self.cfg.deception_engine)
+
 
         # ── Session Log Collector (for GNN training data) ─
         global _gnn_log_collector
@@ -385,6 +392,29 @@ class WAFInspectorPlugin(InspectorPlugin):
             except Exception as e:
                 logger.debug("Shadow Autopilot Observe error: %s", e)
 
+        # ── 2.8 INTENT-PROVING DECEPTION CHECK (PATENT POC) ──────────
+        if self.deception_engine:
+            intent_proven, intent_score, evidence = self.deception_engine.analyze_request(
+                payload_str=decoded_text,
+                url_path=request_path
+            )
+            if intent_proven:
+                findings.append(InspectionFinding(
+                    plugin_name="waap_deception",
+                    severity="CRITICAL",
+                    category="Intent Proven",
+                    description=evidence,
+                    confidence=1.0,
+                    recommends_block=True
+                ))
+                logger.critical("INTENT PROVEN: %s", evidence)
+                # Absolute proof overrides further models and blocks immediately
+                return InspectionResult(
+                    action=InspectionAction.BLOCK,
+                    findings=findings,
+                    metadata={"waf": "intent_proven_block", "reason": evidence, "risk_score": 1.0}
+                )
+
         # ── 3. FEATURE EXTRACTION ────────────────────────────────────
         waf_features = {}
         if self.cfg.feature_extraction.enabled:
@@ -483,6 +513,22 @@ class WAFInspectorPlugin(InspectorPlugin):
                 metadata={"reputation_score": reputation_score},
             ))
 
+        # ── 6.5 DECOY INJECTION TRIGGER ──────────────────────────────
+        waf_decoy_payload = None
+        if self.deception_engine and action != InspectionAction.BLOCK:
+            if self.cfg.deception_engine.injection_threshold <= risk_score < self.cfg.risk_scoring.thresholds.block:
+                session_id = context.metadata.get("session_id", context.src_ip)
+                surface = "bola"
+                if any("Bot" in f.category for f in findings):
+                    surface = "scraping"
+                
+                waf_decoy_payload = self.deception_engine.generate_decoy(
+                    session_id=session_id,
+                    ip_address=context.src_ip,
+                    attack_surface=surface
+                )
+                logger.info("Injecting Decoy Object for IP %s (Risk: %.2f)", context.src_ip, risk_score)
+
         # ── Assemble result ──────────────────────────────────────────
         latency_ms = (time.time() - t_start) * 1000
 
@@ -499,8 +545,10 @@ class WAFInspectorPlugin(InspectorPlugin):
                 "nlp_label":        nlp_label,
                 "bot_label":        bot_label,
                 "latency_ms":       round(latency_ms, 2),
+                "waf_decoy_payload": waf_decoy_payload,  # Signal for API Router to attach decoy header
             },
         )
+
 
         logger.info(
             "WAF [%s] → %s (risk=%.2f, decision=%s) | latency=%.1fms",

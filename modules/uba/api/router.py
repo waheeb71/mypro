@@ -38,6 +38,7 @@ require_uba = make_permission_checker("uba")
 
 class UBAConfigUpdate(BaseModel):
     enabled: Optional[bool] = None
+    deception_enabled: Optional[bool] = None
     mode: Optional[str] = Field(None, description="monitor|enforce|learning")
     baseline_min_events: Optional[int] = None
     ema_alpha: Optional[float] = Field(None, ge=0.01, le=1.0)
@@ -81,6 +82,7 @@ def _get_or_create_uba_config(db):
 def _config_to_dict(cfg) -> dict:
     return {
         "enabled":               cfg.enabled,
+        "deception_enabled":     getattr(cfg, "deception_enabled", True),
         "mode":                  cfg.mode,
         "baseline_min_events":   cfg.baseline_min_events,
         "max_known_ips":         cfg.max_known_ips,
@@ -350,3 +352,59 @@ async def submit_event(
         return {"status": "analyzed", "result": result.to_dict()}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ── Demo Endpoints for UBA Deception (Patent PoC) ─────────────────────────────
+
+class UBADemoAccess(BaseModel):
+    username: str
+    target_service: str
+    simulated_risk_score: float = 0.6  # Default is high (0.4 - 0.8)
+
+@router.post("/demo/file_access")
+async def demo_file_access(request: Request, data: UBADemoAccess):
+    """
+    Simulates a high-risk access attempt that triggers the Honeytoken bait.
+    """
+    from modules.uba.engine.core.uba_deception import UBAHoneytokenEngine
+    db = _get_db(request)
+    cfg = _get_or_create_uba_config(db)
+    
+    if not getattr(cfg, "deception_enabled", True):
+        return {"access": "granted", "files": ["Public_Policy.pdf", "Holiday_Calendar.pdf"], "status": "Normal Access"}
+
+    # Simulate UBA Profiler analysis where score > threshold
+    if data.simulated_risk_score >= 0.4:
+        engine = UBAHoneytokenEngine()
+        bait_payload = engine.generate_contextual_bait(
+            username=data.username, 
+            source_ip="10.0.0.99", 
+            target_service=data.target_service
+        )
+        return {
+            "access": "granted_with_monitoring",
+            "message": f"Anomalous access detected (Score: {data.simulated_risk_score}). Injecting bait.",
+            "response_data": bait_payload
+        }
+    
+    return {"access": "granted", "files": ["Public_Policy.pdf"], "status": "Normal Access"}
+
+@router.post("/demo/open_honeytoken")
+async def demo_open_honeytoken(token_payload: dict):
+    """
+    Simulates the attacker interacting with the generated Honeytoken.
+    """
+    from modules.uba.engine.core.uba_deception import UBAHoneytokenEngine
+    engine = UBAHoneytokenEngine()
+    
+    # Check if the payload matches an active honeytoken
+    payload_str = str(token_payload)
+    is_accessed, evidence = engine.verify_honeytoken_access(payload_str)
+    
+    if is_accessed:
+        return {
+            "uba_action": "ACCOUNT_LOCKED",
+            "threat_score": 1.0,
+            "reason": evidence
+        }
+    return {"uba_action": "IGNORE", "message": "No honeytoken detected in payload."}

@@ -16,6 +16,9 @@ class IPSConfig(Base):
     enable_l3_anomaly = Column(Boolean, default=True, comment="Enable L3 Anomaly Detection (IsolationForest)")
     enable_l7_dpi = Column(Boolean, default=True, comment="Enable L7 DPI Classification (XGBoost/RF)")
     
+    # Deception Toggle
+    deception_enabled = Column(Boolean, default=True, comment="Dynamically deploy network tarpits/banners instead of dropping packets")
+    
     # ML Threshold
     anomaly_threshold = Column(Float, default=0.5, comment="Threshold above which to block anomalies")
     

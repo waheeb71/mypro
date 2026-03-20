@@ -366,6 +366,7 @@ class UBAConfig(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     enabled = Column(Boolean, default=True)
+    deception_enabled = Column(Boolean, default=True) # Patent PoC
     mode = Column(String(16), default='monitor')      # monitor|enforce|learning
 
     baseline_min_events = Column(Integer, default=50)

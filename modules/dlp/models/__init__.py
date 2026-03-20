@@ -20,5 +20,6 @@ class DLPConfig(Base):
     
     is_active = Column(Boolean, default=True)
     block_on_match = Column(Boolean, default=True, comment="If true, traffic matching rules will be dropped")
+    deception_enabled = Column(Boolean, default=True, comment="If true, generates Data Watermark Traps upon detecting exfiltration attempts")
     
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

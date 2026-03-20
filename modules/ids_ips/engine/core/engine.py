@@ -13,6 +13,7 @@ from modules.ids_ips.engine.anomaly_detector import AnomalyDetector, TrafficFeat
 from modules.ids_ips.models import IPSConfig, IPSSignature
 from sqlalchemy.orm import Session
 from system.database.database import SessionLocal
+from system.core.deception.unified_engine import UnifiedDeceptionEngine
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class IPSEngine:
         self.threat_intel = ThreatIntelligence()
         self.reputation = ReputationEngine()
         self.signature_engine = SignatureEngine()
+        self.unified_deception = UnifiedDeceptionEngine()
         
         # Paths to AI models (centralized in ml/models/)
         from ml.models import get_model_path
@@ -104,6 +106,18 @@ class IPSEngine:
             if alerts:
                 for alert in alerts:
                     self.logger.warning(f"IPS Signature Match: {alert}")
+                if getattr(self.config, 'deception_enabled', True):
+                    trap_id, fake_banner = self.unified_deception.generate_trap(
+                        module="ids_ips",
+                        username="unknown",
+                        source_ip=context.src_ip,
+                        target_service=str(context.dst_port),
+                        anomaly_score=1.0 # Signatures are highly certain
+                    )
+                    context.metrics = context.metrics or {}
+                    context.metrics["deception_trap"] = fake_banner
+                    return Action.DECEIVE
+                    
                 if self.config.mode == "blocking": return Action.BLOCK
         
         # 4. AI Anomaly Detection (L3 & L7)
@@ -126,9 +140,21 @@ class IPSEngine:
                     self.logger.warning(f"IPS L7 DPI Classified Attack: {result.details['l7_classification']} (Conf: {result.details.get('l7_confidence', 0):.2f})")
                     block_anomaly = True
                     
-                if block_anomaly and self.config.mode == "blocking":
-                    return Action.BLOCK
-                    
+                if block_anomaly:
+                    if getattr(self.config, 'deception_enabled', True):
+                        trap_id, fake_banner = self.unified_deception.generate_trap(
+                            module="ids_ips",
+                            username="unknown",
+                            source_ip=context.src_ip,
+                            target_service=str(context.dst_port),
+                            anomaly_score=result.anomaly_score
+                        )
+                        context.metrics["deception_trap"] = fake_banner
+                        return Action.DECEIVE
+                        
+                    if self.config.mode == "blocking":
+                        return Action.BLOCK
+                        
             except Exception as e:
                 self.logger.error(f"Error executing AI Detector: {e}")
                 

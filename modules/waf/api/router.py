@@ -108,7 +108,8 @@ async def waf_status(token: dict = Depends(require_waf)):
                 "waap_fingerprint": cfg.fingerprint.enabled,
                 "waap_ato":       cfg.ato_protector.enabled,
                 "waap_rate_limit": cfg.rate_limiter.enabled,
-                "self_learning":  cfg.self_learning.enabled,
+                "self_learning":  getattr(cfg, 'self_learning', None) and cfg.self_learning.enabled,
+                "deception_engine": getattr(cfg, 'deception_engine', None) and cfg.deception_engine.enabled,
             },
         }
     except Exception as e:
@@ -379,6 +380,8 @@ async def toggle_waap_feature(feature: str, request: ToggleRequest, token: dict 
         cfg.rate_limiter.enabled = request.enabled
     elif feature == "self_learning":
         cfg.self_learning.enabled = request.enabled
+    elif feature == "deception_engine":
+        cfg.deception_engine.enabled = request.enabled
     else:
         raise HTTPException(status_code=400, detail=f"Unknown WAAP feature: {feature}")
         
@@ -486,4 +489,52 @@ async def export_shadow_schema(token: dict = Depends(require_admin)):
         "schema": generated_schema,
         "message": "Schema perfectly tailored to your application's traffic!"
     }
+
+
+# ── Patent PoC Demo Endpoints ──────────────────────
+from fastapi import Request
+
+@router.post("/waap/demo/bola_target")
+@router.get("/waap/demo/bola_target")
+async def demo_bola_deception(request: Request):
+    """
+    Demo endpoint to showcase the 'Intent-Proving Deceptive Object Graph WAAP'.
+    Send an anomalous request to this endpoint to receive a Deceptive Canary.
+    Then send the canary back in a second request to prove malicious intent.
+    """
+    # Simulate a generic backend response
+    response_data = {
+        "status": "success",
+        "data": {
+            "account_id": "acc_12345",
+            "balance": "$5,000"
+        }
+    }
+    
+    # In a real setup, a middleware would pull 'waf_decoy_payload' from the InspectionResult metadata
+    # For this PoC, we check the global active plugin just for demonstration
+    try:
+        from system.inspection_core.framework.pipeline import _global_pipeline
+        # A contrived way to fish out the decoy just for the demo 
+        # (Assuming the WAF inspector left a decoy in its engine state for this IP)
+        import modules.waf.engine.waf_inspector as waf_mod
+        for p in _global_pipeline.get_plugins():
+            if isinstance(p, waf_mod.WAFInspectorPlugin) and p.deception_engine:
+                # Let's peek into the engine's generated canaries for this IP
+                # This is normally securely injected by the proxy, not the app itself.
+                client_ip = request.client.host if request.client else "unknown"
+                for canary_val, record in list(p.deception_engine.canaries.items()):
+                    if record.ip_address == client_ip:
+                        # We found a trap set for this IP! Inject it into the response.
+                        response_data["_metadata"] = p.deception_engine.generate_decoy(
+                            session_id="demo_session", 
+                            ip_address=client_ip, 
+                            attack_surface=record.canary_type.split('_')[0]
+                        )
+                        break
+    except Exception as e:
+        logger.error(f"Demo Decoy Injection Error: {e}")
+
+    return response_data
+
 

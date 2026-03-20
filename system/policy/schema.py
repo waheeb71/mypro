@@ -18,6 +18,7 @@ class Action(Enum):
     RATE_LIMIT = "rate_limit"  # ✨ NEW: Apply rate limiting
     QUARANTINE = "quarantine"  # ✨ NEW: Isolate suspicious traffic
     LOG_ONLY = "log_only"  # ✨ NEW: Only log, no action
+    DECEIVE = "deceive"  # ✨ NEW: Send deceptive payloads/tarpits to prove intent
 
 class Protocol(Enum):
     TCP = "tcp"

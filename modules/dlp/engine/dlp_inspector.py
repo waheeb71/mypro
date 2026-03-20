@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from system.database.database import get_db, SessionLocal
 from system.inspection_core.framework.plugin_base import InspectorPlugin, InspectionContext, InspectionFinding, InspectionResult, InspectionAction
 from modules.dlp.models import DLPRule, DLPConfig
+from system.core.deception.unified_engine import UnifiedDeceptionEngine
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class DLPInspectorPlugin(InspectorPlugin):
     def __init__(self, block_on_match: bool = True):
         super().__init__(name="dlp_inspector", priority=60)
         self.block_on_match = block_on_match
+        self.unified_deception = UnifiedDeceptionEngine()
         
     def can_inspect(self, context: InspectionContext) -> bool:
         """DLP runs on all traffic, skip inbound unless configured"""
@@ -98,9 +100,24 @@ class DLPInspectorPlugin(InspectorPlugin):
                         )
                     )
             
+            
             should_block = block_policy and bool(findings)
             action = InspectionAction.BLOCK if should_block else InspectionAction.ALLOW
             
+            # Deception Flow: Inject Data Watermark Traps if enabled and there are findings
+            if findings and getattr(config, 'deception_enabled', True):
+                trap_id, watermark_payload = self.unified_deception.generate_trap(
+                    module="dlp",
+                    username=context.metadata.get("username", "unknown"),
+                    source_ip=context.src_ip,
+                    target_service="egress_dlp",
+                    anomaly_score=1.0 # Exfiltration match is a definitive alert
+                )
+                action = InspectionAction.DECEIVE
+                # Attach the watermark trap info for the core pipeline to handle 
+                context.metrics = context.metrics or {}
+                context.metrics["deception_trap"] = watermark_payload
+                
         except Exception as e:
             logger.error(f"DLP inspection failed: {e}")
         finally:
