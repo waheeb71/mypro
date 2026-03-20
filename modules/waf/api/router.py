@@ -122,24 +122,26 @@ async def live_dashboard_websocket(websocket: WebSocket, token: str = Query(...,
     Connect here from a frontend dashboard to stream Block/Challenge events instantly.
     The client must pass the JWT token in the query string: ?token=ey...
     """
-    await websocket.accept()
-
+    # ─ Authenticate BEFORE accept (prevents exposing unauthenticated socket) ─
     try:
-        # Authenticate the WebSocket connection manually
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if payload.get("role") != "admin":
-            await websocket.close(code=1008, reason="Admin privileges required")
+        role = payload.get("role", "")
+        if role not in ("admin", "waf", "viewer"):
+            await websocket.close(code=1008, reason="Insufficient privileges")
             return
     except Exception as e:
-        logger.warning(f"WebSocket auth failed: {e}")
-        await websocket.close(code=1008, reason="Invalid authentication token")
+        logger.warning("WebSocket auth failed: %s", e)
+        # Per ASGI spec: if not yet accepted, just return without calling close()
         return
 
-    await waf_dispatcher.connect(websocket) # Already handles tracking
+    # ─ Accept ONCE here, then register with dispatcher ─
+    await websocket.accept()
+    waf_dispatcher._active_connections.append(websocket)
+    logger.debug("Live Dashboard Client connected. Total: %d", len(waf_dispatcher._active_connections))
 
     try:
         while True:
-            # Keep connection alive, wait for client disconnect
+            # Keep connection alive, wait for client ping / disconnect
             await websocket.receive_text()
     except WebSocketDisconnect:
         waf_dispatcher.disconnect(websocket)

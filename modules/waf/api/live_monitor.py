@@ -17,7 +17,7 @@ class WAFEventDispatcher:
         logger.info("WAF Event Dispatcher initialized")
 
     async def connect(self, websocket: WebSocket):
-        await websocket.accept()
+        """Register an already-accepted WebSocket connection."""
         self._active_connections.append(websocket)
         logger.debug("Live Dashboard Client connected. Total: %d", len(self._active_connections))
 
