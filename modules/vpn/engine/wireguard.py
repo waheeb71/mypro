@@ -32,7 +32,7 @@ class WireGuardManager:
         self.listen_port: int = 51820
         self.peers: Dict[str, PeerConfig] = {}
         
-    def _run_cmd(self, cmd: List[str], check: bool = True) -> str:
+    def _run_cmd(self, cmd: List[str], check: bool = True, log_error: bool = True) -> str:
         """Run a shell command and return its output."""
         try:
             result = subprocess.run(
@@ -43,7 +43,8 @@ class WireGuardManager:
             )
             return result.stdout.strip()
         except subprocess.CalledProcessError as e:
-            self.logger.error(f"Command failed: {' '.join(cmd)}\nError: {e.stderr}")
+            if log_error:
+                self.logger.error(f"Command failed: {' '.join(cmd)}\nError: {e.stderr}")
             if check:
                 raise
             return ""
@@ -168,7 +169,7 @@ class WireGuardManager:
     def _interface_exists(self) -> bool:
         """Check if the network interface exists."""
         try:
-            self._run_cmd(["ip", "link", "show", "dev", self.interface])
+            self._run_cmd(["ip", "link", "show", "dev", self.interface], log_error=False)
             return True
         except subprocess.CalledProcessError:
             return False
