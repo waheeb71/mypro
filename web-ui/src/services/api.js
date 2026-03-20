@@ -109,8 +109,14 @@ export const idsApi = {
 
 /* ── DNS Security ──────────────────────────────────── */
 export const dnsApi = {
-  status: ()       => api.get('/api/v1/dns_security/status'),
-  blocklist: ()    => api.get('/api/v1/dns_security/blocklist'),
+  status:       ()        => api.get('/api/v1/dns_security/status'),
+  getConfig:    ()        => api.get('/api/v1/dns_security/config'),
+  updateConfig: (d)       => api.put('/api/v1/dns_security/config', d),
+  stats:        ()        => api.get('/api/v1/dns_security/stats'),
+  rules:        ()        => api.get('/api/v1/dns_security/rules'),
+  createRule:   (d)       => api.post('/api/v1/dns_security/rules', d),
+  updateRule:   (id, d)   => api.put(`/api/v1/dns_security/rules/${id}`, d),
+  deleteRule:   (id)      => api.delete(`/api/v1/dns_security/rules/${id}`),
 };
 
 /* ── VPN ───────────────────────────────────────────── */

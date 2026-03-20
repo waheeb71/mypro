@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ShieldOff, Search, Eye, Shield, RefreshCw, Plus, Trash2,
-  AlertTriangle, CheckCircle, FileText, Lock, Database
+  AlertTriangle, CheckCircle, FileText, Lock, Database, Zap
 } from 'lucide-react';
 import { dlpApi } from '../../services/api';
 
@@ -106,27 +106,66 @@ export default function DLP() {
       )}
 
       {tab === 'config' && (
-        <div className="card" style={{ padding: 'var(--sp-6)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-5)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 700 }}>Enable DLP Monitoring</div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Scan all outbound traffic for restricted data patterns</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
+          <div className="card" style={{ padding: 'var(--sp-6)' }}>
+            <h3 style={{ marginBottom: 'var(--sp-5)', fontWeight: 700 }}>Module Settings</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-5)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>Enable DLP Monitoring</div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Scan all outbound traffic for restricted data patterns</div>
+                </div>
+                <label className="toggle">
+                  <input type="checkbox" checked={cfg.is_active} onChange={() => updateConfigMutation.mutate({ ...cfg, is_active: !cfg.is_active })} />
+                  <span className="toggle-slider" />
+                </label>
               </div>
-              <label className="toggle">
-                <input type="checkbox" checked={cfg.is_active} onChange={() => updateConfigMutation.mutate({ ...cfg, is_active: !cfg.is_active })} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>Auto-Block Outbound Leaks</div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Immediately drop packets matching CRITICAL/HIGH DLP rules</div>
+                </div>
+                <label className="toggle">
+                  <input type="checkbox" checked={cfg.block_on_match} onChange={() => updateConfigMutation.mutate({ ...cfg, block_on_match: !cfg.block_on_match })} />
+                  <span className="toggle-slider" />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Causal Deception Engine Card */}
+          <div className="card" style={{ padding: 'var(--sp-6)', border: '1px solid rgba(255,180,0,0.3)', background: 'linear-gradient(135deg, var(--bg-card), rgba(255,180,0,0.04))' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', marginBottom: 'var(--sp-5)' }}>
+              <div style={{ padding: 8, background: 'rgba(255,180,0,0.15)', borderRadius: '50%' }}>
+                <Zap size={18} style={{ color: '#ffb400' }} />
+              </div>
+              <div>
+                <h3 style={{ color: '#ffb400', margin: 0 }}>Causal Deception Engine</h3>
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', margin: 0 }}>Patent-Pending Active Defense — DLP Watermark Traps</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--sp-4)', background: 'var(--bg-raised)', borderRadius: 'var(--radius)', border: '1px solid rgba(255,180,0,0.15)' }}>
+              <div>
+                <div style={{ fontWeight: 700 }}>Data Watermark Traps</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
+                  Instead of silently dropping suspected data exfiltration, the engine injects invisible
+                  watermarked decoy records (Fake PII/CC) to track and prove intent across external channels.
+                </div>
+              </div>
+              <label className="toggle" style={{ marginLeft: 'var(--sp-5)', flexShrink: 0 }}>
+                <input
+                  type="checkbox"
+                  checked={cfg.deception_enabled ?? true}
+                  onChange={() => updateConfigMutation.mutate({ ...cfg, deception_enabled: !cfg.deception_enabled })}
+                />
                 <span className="toggle-slider" />
               </label>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 700 }}>Auto-Block Outbound Leaks</div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Immediately drop packets matching CRITICAL/HIGH DLP rules</div>
-              </div>
-              <label className="toggle">
-                <input type="checkbox" checked={cfg.block_on_match} onChange={() => updateConfigMutation.mutate({ ...cfg, block_on_match: !cfg.block_on_match })} />
-                <span className="toggle-slider" />
-              </label>
+
+            <div style={{ marginTop: 'var(--sp-4)', padding: 'var(--sp-3) var(--sp-4)', background: 'rgba(255,180,0,0.08)', borderRadius: 'var(--radius)', fontSize: 'var(--text-xs)', color: '#ffb400', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Zap size={12} />
+              <span>Powered by the <strong>Unified Causal Deception Engine</strong> — Watermark tokens are shared with the cross-module intent pool.</span>
             </div>
           </div>
         </div>

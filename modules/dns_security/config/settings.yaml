@@ -1,3 +1,29 @@
 dns_security:
   enabled: true
-  mode: "monitor"
+  mode: "blocking"          # blocking | monitoring
+
+  engines:
+    dga_detection:
+      enabled: true
+      entropy_threshold: 3.8
+
+    tunneling_detection:
+      enabled: true
+      query_threshold: 50       # max repeated queries per domain/IP
+      max_total_length: 150
+      max_label_length: 50
+      suspicious_query_types: ["TXT", "NULL", "SRV", "MX"]
+
+    rate_limiting:
+      enabled: true
+      limit_per_minute: 100     # per source IP
+
+    tld_blocking:
+      enabled: true
+      tlds: ".tk,.ml,.ga,.cf,.gq,.xyz,.top,.win,.bid,.onion"
+
+    threat_intel:
+      enabled: true
+      # Future: url to remote IOC feed
+      feed_url: ""
+      refresh_interval_hours: 6

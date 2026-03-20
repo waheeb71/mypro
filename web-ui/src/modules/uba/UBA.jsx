@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   User, Activity, ShieldAlert, Settings, Search,
   RefreshCw, TrendingUp, AlertCircle, Clock, Database,
-  UserCheck, UserX, Plus, FileText, BarChart3
+  UserCheck, UserX, Plus, FileText, BarChart3, Zap
 } from 'lucide-react';
 import { ubaApi } from '../../services/api';
 
@@ -62,6 +62,16 @@ export default function UBA() {
       qc.invalidateQueries({ queryKey: ['uba_users'] });
       qc.invalidateQueries({ queryKey: ['uba_profile', selectedUser] });
     }
+  });
+
+  const { data: ubaConfig } = useQuery({
+    queryKey: ['uba_config'],
+    queryFn: () => ubaApi.getConfig().then(r => r.data)
+  });
+
+  const updateConfigMutation = useMutation({
+    mutationFn: (d) => ubaApi.updateConfig(d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['uba_config'] })
   });
 
   return (
@@ -410,41 +420,79 @@ export default function UBA() {
         )}
 
         {tab === 'settings' && (
-          <div className="card" style={{ padding: 'var(--sp-6)' }}>
-            <h3 style={{ marginBottom: 'var(--sp-6)' }}>Engine Configuration</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-5)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 700 }}>Enable UBA Analysis</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Globally profile user behavior and detect anomalies</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
+            <div className="card" style={{ padding: 'var(--sp-6)' }}>
+              <h3 style={{ marginBottom: 'var(--sp-6)' }}>Engine Configuration</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-5)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>Enable UBA Analysis</div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Globally profile user behavior and detect anomalies</div>
+                  </div>
+                  <label className="toggle">
+                    <input type="checkbox" checked={status?.status === 'active'} readOnly />
+                    <span className="toggle-slider" />
+                  </label>
                 </div>
-                <label className="toggle">
-                  <input type="checkbox" checked={status?.status === 'active'} readOnly />
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)' }}>
+                  <div className="form-group">
+                    <label className="form-label">Auto-Block Risk Level</label>
+                    <select className="input">
+                      <option value="CRITICAL">Critical Only</option>
+                      <option value="HIGH">High & Critical</option>
+                      <option value="MEDIUM">Medium and above</option>
+                      <option value="NONE">Monitor Only (Never block)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Training Period (Min Events)</label>
+                    <input className="input" type="number" defaultValue={500} />
+                  </div>
+                </div>
+
+                <div className="info-box-success" style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'center' }}>
+                  <ShieldAlert size={18} />
+                  <div style={{ fontSize: 'var(--text-sm)' }}>
+                    The UBA engine is currently using <strong>Ensemble Discovery</strong> mode. Results from 5 detectors are being aggregated.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Causal Deception Engine Card */}
+            <div className="card" style={{ padding: 'var(--sp-6)', border: '1px solid rgba(255,180,0,0.3)', background: 'linear-gradient(135deg, var(--bg-card), rgba(255,180,0,0.04))' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', marginBottom: 'var(--sp-5)' }}>
+                <div style={{ padding: 8, background: 'rgba(255,180,0,0.15)', borderRadius: '50%' }}>
+                  <Zap size={18} style={{ color: '#ffb400' }} />
+                </div>
+                <div>
+                  <h3 style={{ color: '#ffb400', margin: 0 }}>Causal Deception Engine</h3>
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', margin: 0 }}>Patent-Pending Active Defense — Unified Deception Technology</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--sp-4)', background: 'var(--bg-raised)', borderRadius: 'var(--radius)', border: '1px solid rgba(255,180,0,0.15)' }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>Contextual Honeytoken Injection</div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
+                    When a user exceeds the high-risk threshold, the engine dynamically injects personalized fake files,
+                    links, or credentials into the user's session. Any interaction proves malicious intent with 100% certainty.
+                  </div>
+                </div>
+                <label className="toggle" style={{ marginLeft: 'var(--sp-5)', flexShrink: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={ubaConfig?.deception_enabled ?? true}
+                    onChange={() => updateConfigMutation.mutate({ ...ubaConfig, deception_enabled: !ubaConfig?.deception_enabled })}
+                  />
                   <span className="toggle-slider" />
                 </label>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--sp-4)' }}>
-                <div className="form-group">
-                  <label className="form-label">Auto-Block Risk Level</label>
-                  <select className="input">
-                    <option value="CRITICAL">Critical Only</option>
-                    <option value="HIGH">High & Critical</option>
-                    <option value="MEDIUM">Medium and above</option>
-                    <option value="NONE">Monitor Only (Never block)</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Training Period (Min Events)</label>
-                  <input className="input" type="number" defaultValue={500} />
-                </div>
-              </div>
-
-              <div className="info-box-success" style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'center' }}>
-                <ShieldAlert size={18} />
-                <div style={{ fontSize: 'var(--text-sm)' }}>
-                  The UBA engine is currently using **Ensemble Discovery** mode. Results from 5 detectors are being aggregated.
-                </div>
+              <div style={{ marginTop: 'var(--sp-4)', padding: 'var(--sp-3) var(--sp-4)', background: 'rgba(255,180,0,0.08)', borderRadius: 'var(--radius)', fontSize: 'var(--text-xs)', color: '#ffb400', display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Zap size={12} />
+                <span>Powered by the <strong>Unified Causal Deception Engine</strong> — Cross-module traps share a common intent verification pool.</span>
               </div>
             </div>
           </div>
