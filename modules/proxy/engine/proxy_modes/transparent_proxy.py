@@ -775,7 +775,7 @@ class MITMProxy:
                             metadata={}
                         )
                         
-                        result = self.inspection_pipeline.inspect(context, data)
+                        result = await self.inspection_pipeline.inspect_async(context, data)
                         
                         if result.is_blocked:
                             logger.warning(f"🚫 Blocked by inspection: {direction} (Action: {result.action.name})")

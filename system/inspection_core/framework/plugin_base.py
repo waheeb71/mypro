@@ -143,6 +143,20 @@ class InspectorPlugin(ABC):
             InspectionResult with findings
         """
         pass
+
+    async def inspect_async(
+        self,
+        context: InspectionContext,
+        data: bytes
+    ) -> 'InspectionResult':
+        """
+        Asynchronously inspect the traffic data.
+        Defaults to running the synchronous inspect() method in a background thread 
+        to ensure 100% backwards compatibility for legacy modules.
+        Native async modules should override this method directly.
+        """
+        import asyncio
+        return await asyncio.to_thread(self.inspect, context, data)
         
     def enable(self) -> None:
         """Enable this plugin"""

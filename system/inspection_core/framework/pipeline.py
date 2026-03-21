@@ -200,6 +200,87 @@ class InspectionPipeline:
             )
             
         return result
+
+    async def inspect_async(
+        self,
+        context: InspectionContext,
+        data: bytes
+    ) -> InspectionResult:
+        """
+        Asynchronously inspect traffic through all applicable plugins.
+        """
+        import time
+        start_time = time.time()
+        
+        with self._lock:
+            self._total_inspections += 1
+            
+        result = InspectionResult(action=InspectionAction.ALLOW)
+        
+        try:
+            for plugin in self._plugins:
+                if not plugin.enabled or not plugin.can_inspect(context):
+                    continue
+                    
+                elapsed = (time.time() - start_time) * 1000
+                if elapsed > self._max_processing_time_ms:
+                    self.logger.warning(
+                        f"Async Inspection timeout reached at plugin {plugin.name}"
+                    )
+                    break
+                    
+                try:
+                    plugin_result = await plugin.inspect_async(context, data)
+                    
+                    result.findings.extend(plugin_result.findings)
+                    if plugin_result.action > result.action:
+                        result.action = plugin_result.action
+                    result.metadata.update(plugin_result.metadata)
+                    
+                    plugin._inspected_count += 1
+                    if plugin_result.findings:
+                        plugin._detected_count += 1
+                    if plugin_result.is_blocked:
+                        plugin._blocked_count += 1
+                        
+                except Exception as e:
+                    self.logger.error(
+                        f"Plugin {plugin.name} failed during async execution: {e}",
+                        exc_info=True
+                    )
+                    if not self._fail_open:
+                        result.action = InspectionAction.BLOCK
+                        result.findings.append(InspectionFinding(
+                            severity='HIGH', category='inspection_error',
+                            description=f"Plugin {plugin.name} async error",
+                            plugin_name=plugin.name, confidence=1.0
+                        ))
+                        break
+                        
+        except Exception as e:
+            self.logger.error(f"Async Pipeline inspection failed: {e}", exc_info=True)
+            if not self._fail_open:
+                result.action = InspectionAction.BLOCK
+                result.findings.append(InspectionFinding(
+                    severity='CRITICAL', category='pipeline_error',
+                    description="Async Pipeline error", plugin_name='pipeline', confidence=1.0
+                ))
+                
+        end_time = time.time()
+        result.processing_time_ms = (end_time - start_time) * 1000
+        
+        with self._lock:
+            self._total_processing_time_ms += result.processing_time_ms
+            if result.is_blocked:
+                self._total_blocks += 1
+                
+        if result.findings:
+            self.logger.info(
+                f"Async Inspection completed: {len(result.findings)} findings, "
+                f"action={result.action.name}, time={result.processing_time_ms:.2f}ms"
+            )
+            
+        return result
         
     def set_fail_mode(self, fail_open: bool) -> None:
         """Set fail mode (open or closed)"""
