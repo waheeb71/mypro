@@ -162,6 +162,11 @@ export const malwareApi = {
   status: () => api.get('/api/v1/malware_av/status'),
   config: () => api.get('/api/v1/malware_av/config'),
   updateConfig: (d) => api.put('/api/v1/malware_av/config', d),
+  scan: (f) => {
+    const fd = new FormData();
+    fd.append('file', f);
+    return api.post('/api/v1/malware_av/scan', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
 };
 
 /* ── UBA (User Behavior) ───────────────────────────── */
