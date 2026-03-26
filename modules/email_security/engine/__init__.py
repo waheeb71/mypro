@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Email Security Sub-Package
+Enterprise CyberNexus — Email Security Sub-Package
 
 AI-Powered Email Threat Detection:
   - engine/core/settings.py         : YAML-driven config loader

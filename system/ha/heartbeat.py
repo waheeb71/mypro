@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - HA Manager (Heartbeat & State Sync)
+Enterprise CyberNexus - HA Manager (Heartbeat & State Sync)
 
 Provides Active-Passive High Availability clustering. Nodes exchange
 UDP heartbeats. If the Master fails, the Backup takes over and 

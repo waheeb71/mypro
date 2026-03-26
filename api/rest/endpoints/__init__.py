@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Endpoints Package
+Enterprise CyberNexus - Endpoints Package
 All API routers live here as individual files.
 
 # How to add a new endpoint group:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - Unit Tests for Flow Tracker
+Enterprise CyberNexus - Unit Tests for Flow Tracker
 
 Tests for:
 - Flow creation and tracking

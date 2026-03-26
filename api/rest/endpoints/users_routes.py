@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - User & Rules Management Endpoints  (Admin only)
+Enterprise CyberNexus - User & Rules Management Endpoints  (Admin only)
 GET    /api/v1/users             — List users
 POST   /api/v1/users             — Create user
 DELETE /api/v1/users/{username}  — Remove user
@@ -35,9 +35,9 @@ class RuleCreate(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _db(request: Request):
-    if not hasattr(request.app.state, "ngfw") or not request.app.state.ngfw:
-        raise HTTPException(status_code=503, detail="NGFW not initialized")
-    return request.app.state.ngfw.db
+    if not hasattr(request.app.state, "CyberNexus") or not request.app.state.CyberNexus:
+        raise HTTPException(status_code=503, detail="CyberNexus not initialized")
+    return request.app.state.CyberNexus.db
 
 
 # ── User CRUD ─────────────────────────────────────────────────────────────────

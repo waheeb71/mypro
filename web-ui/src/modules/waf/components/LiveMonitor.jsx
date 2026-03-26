@@ -6,11 +6,11 @@ export default function LiveMonitor() {
   const ws = useRef(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('ngfw_token');
+    const token = localStorage.getItem('CyberNexus_token');
     const wsUrl = (import.meta.env.VITE_API_URL || 'http://192.168.109.137:8000').replace(/^http/, 'ws');
-    
+
     ws.current = new WebSocket(`${wsUrl}/api/v1/waf/live?token=${token}`);
-    
+
     ws.current.onmessage = (msg) => {
       try {
         const data = JSON.parse(msg.data);
@@ -36,13 +36,13 @@ export default function LiveMonitor() {
       <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--sp-3)', display: 'flex', flexDirection: 'column', gap: 'var(--sp-2)' }}>
         {events.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: 40, fontSize: 'var(--text-sm)' }}>
-             Monitoring traffic in real-time... No threats detected recently.
+            Monitoring traffic in real-time... No threats detected recently.
           </div>
         ) : (
           events.map((ev, i) => (
-            <div key={i} style={{ 
-              padding: 'var(--sp-3)', 
-              borderRadius: 'var(--radius-sm)', 
+            <div key={i} style={{
+              padding: 'var(--sp-3)',
+              borderRadius: 'var(--radius-sm)',
               background: 'var(--bg-raised)',
               borderLeft: `3px solid ${ev.action === 'BLOCK' ? 'var(--danger)' : 'var(--warning)'}`,
               fontSize: 'var(--text-xs)'
@@ -52,11 +52,11 @@ export default function LiveMonitor() {
                 <span className={`badge ${ev.action === 'BLOCK' ? 'badge-danger' : 'badge-warning'}`}>{ev.action}</span>
               </div>
               <div style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>
-                 Path: <code style={{ color: 'var(--accent)' }}>{ev.path}</code>
+                Path: <code style={{ color: 'var(--accent)' }}>{ev.path}</code>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
-                 <span>Triggers: {ev.triggers?.join(', ') || 'Unknown'}</span>
-                 <span>Score: {ev.risk_score}</span>
+                <span>Triggers: {ev.triggers?.join(', ') || 'Unknown'}</span>
+                <span>Score: {ev.risk_score}</span>
               </div>
             </div>
           ))

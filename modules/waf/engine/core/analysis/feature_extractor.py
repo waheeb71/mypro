@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF Feature Extractor
+Enterprise CyberNexus — WAF Feature Extractor
 
 Extracts 10 HTTP-level numerical features from a decoded WAF payload.
 These features feed the AI models (NLP, Bot, Anomaly) alongside the

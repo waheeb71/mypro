@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF Self-Learning Logger
+Enterprise CyberNexus — WAF Self-Learning Logger
 
 Writes every WAF inspection decision to `waf_training_data` SQLite table.
 

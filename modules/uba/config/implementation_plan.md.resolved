@@ -1,6 +1,6 @@
 # UBA — Intelligent User Behavior Analytics
 
-> **Context:** The UBA module is currently a near-empty stub (91-line engine, no DB models, no real API). The system already has a mature [AnomalyDetector](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/ids_ips/engine/anomaly_detector.py#48-243) in IDS/IPS with Isolation Forest, ONNX, and sklearn support. Industry research confirms that 2024-grade UEBA requires behavioral baselines + dynamic risk scoring + multi-source correlation.
+> **Context:** The UBA module is currently a near-empty stub (91-line engine, no DB models, no real API). The system already has a mature [AnomalyDetector](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/modules/ids_ips/engine/anomaly_detector.py#48-243) in IDS/IPS with Isolation Forest, ONNX, and sklearn support. Industry research confirms that 2024-grade UEBA requires behavioral baselines + dynamic risk scoring + multi-source correlation.
 
 ---
 
@@ -22,7 +22,7 @@ graph TD
     J --> M[API / Alerts]
 ```
 
-## 1 — Database Layer ([system/database/database.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/system/database/database.py))
+## 1 — Database Layer ([system/database/database.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/system/database/database.py))
 
 Three new SQLAlchemy models:
 
@@ -33,7 +33,7 @@ Three new SQLAlchemy models:
 | `UBAConfig` | `uba_config` | Settings (thresholds, enable/disable detectors) |
 
 ### `UBAUserProfile` fields
-- `username`, `user_id` → FK to [users](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/system/database/database.py#207-226)
+- `username`, `user_id` → FK to [users](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/system/database/database.py#207-226)
 - `typical_hours_start/end` — learned work hours (int)
 - `known_ips` (JSON list, up to 30)
 - `known_services` (JSON list, up to 100)
@@ -56,7 +56,7 @@ Three new SQLAlchemy models:
 - `details` (JSON)
 
 ### `UBAConfig` fields
-- [enabled](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/email_security/engine/core/settings.py#182-185), [mode](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/email_security/engine/core/settings.py#186-191) — `monitor|enforce|learning`
+- [enabled](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/modules/email_security/engine/core/settings.py#182-185), [mode](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/modules/email_security/engine/core/settings.py#186-191) — `monitor|enforce|learning`
 - `baseline_min_events` — events before baseline is trusted (default 50)
 - `max_known_ips`, `max_known_services`
 - `thresholds` (JSON) — per-detector thresholds

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - Security Tests
+Enterprise CyberNexus - Security Tests
 
 Simulates various attack scenarios to test detection and blocking:
 - DDoS simulation

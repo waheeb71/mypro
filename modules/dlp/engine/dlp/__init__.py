@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - Data Loss Prevention (DLP)
+Enterprise CyberNexus v2.0 - Data Loss Prevention (DLP)
 
 DLP engine for detecting and preventing sensitive data leakage.
 """

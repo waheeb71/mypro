@@ -1,6 +1,6 @@
 import click
 import sys
-from api.cli.core.client import NGFWClient, DEFAULT_API_URL, save_config, load_config, CONFIG_FILE
+from api.cli.core.client import CyberNexusClient, DEFAULT_API_URL, save_config, load_config, CONFIG_FILE
 
 @click.group()
 def auth():
@@ -12,9 +12,9 @@ def auth():
 @click.option('--password', prompt=True, hide_input=True, help='Password')
 @click.option('--api-url', default=DEFAULT_API_URL, help='API URL')
 def login(username: str, password: str, api_url: str):
-    """Login to NGFW API"""
+    """Login to CyberNexus API"""
     try:
-        client = NGFWClient(api_url)
+        client = CyberNexusClient(api_url)
         token = client.login(username, password)
         save_config({'api_url': api_url, 'token': token, 'username': username})
         click.echo(click.style('✓ Login successful!', fg='green'))
@@ -24,7 +24,7 @@ def login(username: str, password: str, api_url: str):
 
 @auth.command()
 def logout():
-    """Logout from NGFW API"""
+    """Logout from CyberNexus API"""
     if CONFIG_FILE.exists():
         CONFIG_FILE.unlink()
         click.echo(click.style('✓ Logged out successfully', fg='green'))

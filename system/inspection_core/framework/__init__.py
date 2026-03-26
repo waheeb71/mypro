@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - Inspection Framework
+Enterprise CyberNexus v2.0 - Inspection Framework
 
 Deep packet inspection framework with plugin architecture.
 """

@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - Blocking Decision Engine
+Enterprise CyberNexus v2.0 - Blocking Decision Engine
 
 Orchestrates all smart blocking components to make final allow/block decisions.
 
@@ -11,7 +11,7 @@ Integrates:
 
 Provides unified decision-making with policy-based rules.
 
-Author: Enterprise NGFW Team
+Author: Enterprise CyberNexus Team
 License: Proprietary
 """
 

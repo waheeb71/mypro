@@ -29,12 +29,12 @@ function ipToApproxGeo(ip = '') {
 
 // ── Static fallback arcs (demo mode) ──────────────────────
 const STATIC_ARCS = [
-  { srcLat: 37.77,  srcLng: -122.41, dstLat: 51.5,  dstLng: -0.12,  color: '#ff4d6a' },
-  { srcLat: 39.93,  srcLng: 116.38,  dstLat: 40.71, dstLng: -74.0,  color: '#ff4d6a' },
-  { srcLat: 55.75,  srcLng:  37.62,  dstLat: 48.85, dstLng:   2.35, color: '#ffab40' },
-  { srcLat: 28.6,   srcLng:  77.2,   dstLat: 35.68, dstLng: 139.69, color: '#00c8ff' },
-  { srcLat: -23.5,  srcLng: -46.6,   dstLat: 40.41, dstLng:  -3.7,  color: '#ff4d6a' },
-  { srcLat: 24.46,  srcLng:  54.37,  dstLat: 37.77, dstLng: -122.41,color: '#ffab40' },
+  { srcLat: 37.77, srcLng: -122.41, dstLat: 51.5, dstLng: -0.12, color: '#ff4d6a' },
+  { srcLat: 39.93, srcLng: 116.38, dstLat: 40.71, dstLng: -74.0, color: '#ff4d6a' },
+  { srcLat: 55.75, srcLng: 37.62, dstLat: 48.85, dstLng: 2.35, color: '#ffab40' },
+  { srcLat: 28.6, srcLng: 77.2, dstLat: 35.68, dstLng: 139.69, color: '#00c8ff' },
+  { srcLat: -23.5, srcLng: -46.6, dstLat: 40.41, dstLng: -3.7, color: '#ff4d6a' },
+  { srcLat: 24.46, srcLng: 54.37, dstLat: 37.77, dstLng: -122.41, color: '#ffab40' },
 ];
 
 // ── Globe Component ────────────────────────────────────────
@@ -79,10 +79,10 @@ function AttackGlobe({ arcs = STATIC_ARCS }) {
 // ── Alert Item ─────────────────────────────────────────────
 function AlertItem({ alert }) {
   const cfg = {
-    critical: { icon: <ShieldOff size={14} />, bg: 'var(--danger-dim)',  color: 'var(--danger)'  },
-    warning:  { icon: <AlertTriangle size={14}/>, bg: 'var(--warning-dim)',color: 'var(--warning)' },
-    info:     { icon: <Activity size={14} />,   bg: 'var(--info-dim)',   color: 'var(--info)'    },
-  }[alert.severity] || { icon: <Activity size={14}/>, bg: 'var(--bg-raised)', color: 'var(--text-muted)' };
+    critical: { icon: <ShieldOff size={14} />, bg: 'var(--danger-dim)', color: 'var(--danger)' },
+    warning: { icon: <AlertTriangle size={14} />, bg: 'var(--warning-dim)', color: 'var(--warning)' },
+    info: { icon: <Activity size={14} />, bg: 'var(--info-dim)', color: 'var(--info)' },
+  }[alert.severity] || { icon: <Activity size={14} />, bg: 'var(--bg-raised)', color: 'var(--text-muted)' };
 
   return (
     <div className={`alert-item ${alert.severity}`}>
@@ -132,7 +132,7 @@ export default function Dashboard() {
 
   // Connect to WAF Live WebSocket for real-time threat arcs
   useEffect(() => {
-    const token = localStorage.getItem('ngfw_token');
+    const token = localStorage.getItem('CyberNexus_token');
     const wsUrl = (import.meta.env.VITE_API_URL || 'http://192.168.109.137:8000').replace(/^http/, 'ws');
     wsRef.current = new WebSocket(`${wsUrl}/api/v1/waf/live?token=${token}`);
 
@@ -165,27 +165,27 @@ export default function Dashboard() {
   }, []);
 
   const displayAlerts = liveAlerts.length > 0 ? liveAlerts : [
-    { id: 1, severity: 'critical', title: 'SQL Injection Attempt',  src: '195.206.107.x', time: '0s ago' },
-    { id: 2, severity: 'critical', title: 'Brute Force SSH',         src: '45.142.120.x',  time: '4s ago' },
-    { id: 3, severity: 'warning',  title: 'Port Scan Detected',      src: '89.234.157.x',  time: '12s ago'},
-    { id: 4, severity: 'warning',  title: 'DNS Tunneling',           src: '103.56.53.x',   time: '28s ago'},
-    { id: 5, severity: 'info',     title: 'Geo-Block Applied',       src: '5.101.40.x',    time: '41s ago'},
-    { id: 6, severity: 'critical', title: 'XSS Payload Blocked',     src: '217.138.200.x', time: '1m ago' },
+    { id: 1, severity: 'critical', title: 'SQL Injection Attempt', src: '195.206.107.x', time: '0s ago' },
+    { id: 2, severity: 'critical', title: 'Brute Force SSH', src: '45.142.120.x', time: '4s ago' },
+    { id: 3, severity: 'warning', title: 'Port Scan Detected', src: '89.234.157.x', time: '12s ago' },
+    { id: 4, severity: 'warning', title: 'DNS Tunneling', src: '103.56.53.x', time: '28s ago' },
+    { id: 5, severity: 'info', title: 'Geo-Block Applied', src: '5.101.40.x', time: '41s ago' },
+    { id: 6, severity: 'critical', title: 'XSS Payload Blocked', src: '217.138.200.x', time: '1m ago' },
   ];
 
   const STATS = [
-    { label: 'Threats Blocked',    value: sysStatus?.threats_blocked  || '14,832', delta: '+42', up: true,  icon: Shield,   iconClass: 'stat-icon-red'    },
-    { label: 'Active Connections', value: sysStatus?.active_conns     || '2,481',  delta: '+14', up: true,  icon: Activity, iconClass: 'stat-icon-cyan'   },
-    { label: 'Rules Matched',      value: sysStatus?.rules_matched    || '9,604',  delta: '-2%', up: false, icon: Zap,      iconClass: 'stat-icon-orange' },
-    { label: 'System Uptime',      value: sysStatus?.uptime_pct       || '99.9%',  delta: 'stable', up: false, icon: Clock, iconClass: 'stat-icon-green'  },
+    { label: 'Threats Blocked', value: sysStatus?.threats_blocked || '14,832', delta: '+42', up: true, icon: Shield, iconClass: 'stat-icon-red' },
+    { label: 'Active Connections', value: sysStatus?.active_conns || '2,481', delta: '+14', up: true, icon: Activity, iconClass: 'stat-icon-cyan' },
+    { label: 'Rules Matched', value: sysStatus?.rules_matched || '9,604', delta: '-2%', up: false, icon: Zap, iconClass: 'stat-icon-orange' },
+    { label: 'System Uptime', value: sysStatus?.uptime_pct || '99.9%', delta: 'stable', up: false, icon: Clock, iconClass: 'stat-icon-green' },
   ];
 
   const modules = [
-    { label: 'WAF / WAAP Engine',        active: wafStatus?.waf_enabled,            icon: Shield  },
-    { label: 'GNN Threat Detection',     active: wafStatus?.features?.gnn,          icon: Activity },
-    { label: 'NLP Payload Analysis',     active: wafStatus?.features?.nlp,          icon: Zap     },
-    { label: 'Rate Limiter',             active: wafStatus?.features?.waap_rate_limit, icon: Server},
-    { label: 'ATO Protection',           active: wafStatus?.features?.waap_ato,     icon: ShieldOff },
+    { label: 'WAF / WAAP Engine', active: wafStatus?.waf_enabled, icon: Shield },
+    { label: 'GNN Threat Detection', active: wafStatus?.features?.gnn, icon: Activity },
+    { label: 'NLP Payload Analysis', active: wafStatus?.features?.nlp, icon: Zap },
+    { label: 'Rate Limiter', active: wafStatus?.features?.waap_rate_limit, icon: Server },
+    { label: 'ATO Protection', active: wafStatus?.features?.waap_ato, icon: ShieldOff },
   ];
 
   return (
@@ -194,7 +194,7 @@ export default function Dashboard() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Security Operations Center</h1>
-          <p className="page-subtitle">Real-time threat monitoring • Enterprise NGFW Console</p>
+          <p className="page-subtitle">Real-time threat monitoring • Enterprise CyberNexus Console</p>
         </div>
         <div className="topbar-live">
           <div className="topbar-live-dot pulse" />

@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════
-# Enterprise NGFW - Reverse Proxy Configuration
+# Enterprise CyberNexus - Reverse Proxy Configuration
 # ═══════════════════════════════════════════════════════════════════
 
 # Proxy Configuration
@@ -31,13 +31,13 @@ proxy:
 # SSL/TLS Configuration
 tls:
   # CA certificates (needed for health checks/backend connection if TLS)
-  ca_cert_path: "/etc/ngfw/certs/root-ca.crt"
-  ca_key_path: "/etc/ngfw/certs/root-ca.key"
+  ca_cert_path: "/etc/CyberNexus/certs/root-ca.crt"
+  ca_key_path: "/etc/CyberNexus/certs/root-ca.key"
   
   # Server certificate (for reverse proxy termination)
-  server_cert: "/etc/ngfw/certs/server.crt"
-  server_key: "/etc/ngfw/certs/server.key"
-  cert_chain: "/etc/ngfw/certs/chain.pem"
+  server_cert: "/etc/CyberNexus/certs/server.crt"
+  server_key: "/etc/CyberNexus/certs/server.key"
+  cert_chain: "/etc/CyberNexus/certs/chain.pem"
   
   # TLS protocol versions
   min_tls_version: "TLSv1.2"
@@ -78,13 +78,13 @@ security:
 # Logging Configuration
 logging:
   level: "INFO"
-  file: "/var/log/ngfw/ngfw.log"
+  file: "/var/log/CyberNexus/CyberNexus.log"
   max_bytes: 104857600
   backup_count: 10
   flow_log_enabled: true
-  flow_log_file: "/var/log/ngfw/flows.log"
+  flow_log_file: "/var/log/CyberNexus/flows.log"
   security_log_enabled: true
-  security_log_file: "/var/log/ngfw/security.log"
+  security_log_file: "/var/log/CyberNexus/security.log"
 
 # Monitoring Configuration
 monitoring:

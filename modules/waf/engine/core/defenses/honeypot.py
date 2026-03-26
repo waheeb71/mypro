@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF Honeypot Guard
+Enterprise CyberNexus — WAF Honeypot Guard
 
 Detects attackers probing well-known "secret" paths that no legitimate
 user would ever access (admin panels, .env files, debug consoles, etc.).

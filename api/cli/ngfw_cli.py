@@ -1,7 +1,7 @@
 #!/usr/from/env python3
 """
-Enterprise NGFW - Command Line Interface
-Modular CLI tool for NGFW management using Click
+Enterprise CyberNexus - Command Line Interface
+Modular CLI tool for CyberNexus management using Click
 """
 
 import click
@@ -16,7 +16,7 @@ from api.cli.commands.interfaces import interfaces
 @click.version_option(version='2.0.0')
 def cli():
     """
-    Enterprise NGFW Command Line Interface
+    Enterprise CyberNexus Command Line Interface
     
     Hardware-aware Next-Generation Firewall management.
     """

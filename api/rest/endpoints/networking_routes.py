@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Networking Control Endpoints  (Admin only)
+Enterprise CyberNexus - Networking Control Endpoints  (Admin only)
 POST /api/v1/system/networking/transparent-proxy — Enable/disable IPTables NAT rules
 GET  /api/v1/system/networking/status            — Show current networking state
 """
@@ -21,7 +21,7 @@ class TransparentProxyToggle(BaseModel):
 
 def _load_config() -> dict:
     import yaml
-    config_path = os.getenv("NGFW_CONFIG", "/etc/ngfw/config.yaml")
+    config_path = os.getenv("CyberNexus_CONFIG", "/etc/CyberNexus/config.yaml")
     if not os.path.exists(config_path):
         config_path = Path(__file__).parent.parent.parent.parent / "system" / "config" / "base.yaml"
     with open(config_path, "r", encoding="utf-8") as f:
@@ -37,7 +37,7 @@ async def networking_status(token: dict = Depends(require_admin)):
     import subprocess
     try:
         result = subprocess.run(
-            ["iptables", "-t", "nat", "-L", "NGFW_REDIRECT", "--line-numbers"],
+            ["iptables", "-t", "nat", "-L", "CyberNexus_REDIRECT", "--line-numbers"],
             capture_output=True, text=True
         )
         active = result.returncode == 0

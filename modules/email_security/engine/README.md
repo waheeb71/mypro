@@ -1,4 +1,4 @@
-# 📧 AI-Powered Email Security Module — Enterprise NGFW
+# 📧 AI-Powered Email Security Module — Enterprise CyberNexus
 
 نظام فحص أمان البريد الإلكتروني المدعوم بالذكاء الاصطناعي والاستخبارات المتقدمة. 
 يراقب هذا النظام بروتوكولات البريد (SMTP, IMAP, POP3) ويحلل الرسائل لحظر التصيد (Phishing)، المرفقات الخبيثة، الروابط الخطرة، والـ Spam قبل وصولها للمستخدم.

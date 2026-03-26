@@ -1,5 +1,5 @@
 """
-Enterprise NGFW Policy Manager
+Enterprise CyberNexus Policy Manager
 Central orchestrator for all policy decisions.
 """
 

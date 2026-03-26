@@ -1,4 +1,4 @@
-# Enterprise NGFW - API Reference
+# Enterprise CyberNexus - API Reference
 
 ## 🔐 Authentication
 
@@ -430,20 +430,20 @@ curl -H "Authorization: Bearer <token>" http://localhost:8080/api/v1/status
 
 **Response**: Prometheus text format
 ```prometheus
-# HELP ngfw_events_total Total number of events processed
-# TYPE ngfw_events_total counter
-ngfw_events_total{source_path="xdp",verdict="allow"} 12345.0
-ngfw_events_total{source_path="normal",verdict="drop"} 234.0
+# HELP CyberNexus_events_total Total number of events processed
+# TYPE CyberNexus_events_total counter
+CyberNexus_events_total{source_path="xdp",verdict="allow"} 12345.0
+CyberNexus_events_total{source_path="normal",verdict="drop"} 234.0
 
-# HELP ngfw_decisions_total Total number of decisions made
-# TYPE ngfw_decisions_total counter
-ngfw_decisions_total{action="block",source="policy"} 456.0
-ngfw_decisions_total{action="rate_limit",source="ttl"} 89.0
+# HELP CyberNexus_decisions_total Total number of decisions made
+# TYPE CyberNexus_decisions_total counter
+CyberNexus_decisions_total{action="block",source="policy"} 456.0
+CyberNexus_decisions_total{action="rate_limit",source="ttl"} 89.0
 
-# HELP ngfw_ttl_entries_active Number of active TTL entries
-# TYPE ngfw_ttl_entries_active gauge
-ngfw_ttl_entries_active{action_type="BLOCK"} 10.0
-ngfw_ttl_entries_active{action_type="RATE_LIMIT"} 5.0
+# HELP CyberNexus_ttl_entries_active Number of active TTL entries
+# TYPE CyberNexus_ttl_entries_active gauge
+CyberNexus_ttl_entries_active{action_type="BLOCK"} 10.0
+CyberNexus_ttl_entries_active{action_type="RATE_LIMIT"} 5.0
 ```
 
 ---

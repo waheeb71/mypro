@@ -3,7 +3,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - Transparent Proxy Mode
+Enterprise CyberNexus - Transparent Proxy Mode
 ═══════════════════════════════════════════════════════════════════
 
 High-performance asyncio-based MITM proxy with TLS interception,
@@ -859,7 +859,7 @@ class MITMProxy:
             client_addr = client_writer.get_extra_info('peername')
             if not self._check_security_policy(client_addr[0], target_host):
                 logger.warning(f"🚫 HTTP blocked: {client_addr[0]} → {target_host}")
-                client_writer.write(b"HTTP/1.1 403 Forbidden\r\nContent-Length: 21\r\n\r\nBlocked by NGFW policy")
+                client_writer.write(b"HTTP/1.1 403 Forbidden\r\nContent-Length: 21\r\n\r\nBlocked by CyberNexus policy")
                 await client_writer.drain()
                 return
             

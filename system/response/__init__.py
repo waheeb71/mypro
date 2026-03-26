@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Autonomous Response
+Enterprise CyberNexus - Autonomous Response
 
 Exposes the Orchestrator and Recovery components for taking automated
 actions against detected threats.

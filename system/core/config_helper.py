@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - Configuration Management
+Enterprise CyberNexus - Configuration Management
 
 Helpers for loading and validating configuration with schema.
 """

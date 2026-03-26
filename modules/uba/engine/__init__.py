@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — UBA Engine Package
+Enterprise CyberNexus — UBA Engine Package
 
 Exports the main plugin and supporting classes for external use.
 """

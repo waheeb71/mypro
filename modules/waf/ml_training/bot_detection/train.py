@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Bot Detection Training Script
+Enterprise CyberNexus — Bot Detection Training Script
 
 Trains the XGBoost bot classifier on behavioral session features.
 

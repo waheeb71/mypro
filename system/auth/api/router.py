@@ -16,14 +16,14 @@ from api.rest.auth import require_admin, verify_token
 router = APIRouter(prefix="/api/v1/certificates", tags=["certificates", "system"])
 
 # Default paths used by the system
-DEFAULT_CA_CERT_PATH = "/etc/enterprise-ngfw/certs/ca.crt"
-DEFAULT_CA_KEY_PATH = "/etc/enterprise-ngfw/certs/ca.key"
+DEFAULT_CA_CERT_PATH = "/etc/enterprise-CyberNexus/certs/ca.crt"
+DEFAULT_CA_KEY_PATH = "/etc/enterprise-CyberNexus/certs/ca.key"
 
 def get_cert_paths(request: Request):
     """Try to determine the exact cert path from running config, otherwise fallback to default."""
     try:
-        if hasattr(request.app.state, 'ngfw_controller'):
-            cfg = request.app.state.ngfw_controller.config
+        if hasattr(request.app.state, 'CyberNexus_controller'):
+            cfg = request.app.state.CyberNexus_controller.config
             tls_cfg = cfg.get('tls', {})
             cert_path = tls_cfg.get('ca_cert_path', DEFAULT_CA_CERT_PATH)
             key_path = tls_cfg.get('ca_key_path', DEFAULT_CA_KEY_PATH)
@@ -35,7 +35,7 @@ def get_cert_paths(request: Request):
 
 @router.get("/ca/info", response_model=Dict[str, Any])
 async def get_ca_info(request: Request, token: dict = Depends(verify_token)):
-    """Get internal details about the NGFW Transparent Proxy Root CA"""
+    """Get internal details about the CyberNexus Transparent Proxy Root CA"""
     cert_path, _ = get_cert_paths(request)
     
     if not os.path.exists(cert_path):
@@ -82,7 +82,7 @@ async def download_ca(
     format: str = Query("pem", description="Format of the certificate to download (pem, der, p12)"),
     token: dict = Depends(require_admin) # Must be admin to download CA files, especially P12 with key
 ):
-    """Download the Enterprise NGFW Root CA in various formats for client installation"""
+    """Download the Enterprise CyberNexus Root CA in various formats for client installation"""
     cert_path, key_path = get_cert_paths(request)
     
     if not os.path.exists(cert_path):
@@ -98,7 +98,7 @@ async def download_ca(
             return Response(
                 content=cert_data,
                 media_type="application/x-x509-ca-cert",
-                headers={"Content-Disposition": "attachment; filename=ngfw-root-ca.pem"}
+                headers={"Content-Disposition": "attachment; filename=CyberNexus-root-ca.pem"}
             )
             
         elif format.lower() == "der" or format.lower() == "cer":
@@ -106,7 +106,7 @@ async def download_ca(
             return Response(
                 content=der_data,
                 media_type="application/pkix-cert",
-                headers={"Content-Disposition": "attachment; filename=ngfw-root-ca.der"}
+                headers={"Content-Disposition": "attachment; filename=CyberNexus-root-ca.der"}
             )
             
         elif format.lower() == "p12" or format.lower() == "pfx":
@@ -119,17 +119,17 @@ async def download_ca(
             key = serialization.load_pem_private_key(key_data, password=None)
             
             p12_data = pkcs12.serialize_key_and_certificates(
-                name=b"Enterprise NGFW Root CA",
+                name=b"Enterprise CyberNexus Root CA",
                 key=key,
                 cert=cert,
                 cas=None,
-                encryption_algorithm=serialization.BestAvailableEncryption(b"ngfw-ca-password")
+                encryption_algorithm=serialization.BestAvailableEncryption(b"CyberNexus-ca-password")
             )
             
             return Response(
                 content=p12_data,
                 media_type="application/x-pkcs12",
-                headers={"Content-Disposition": "attachment; filename=ngfw-root-ca.p12"}
+                headers={"Content-Disposition": "attachment; filename=CyberNexus-root-ca.p12"}
             )
             
         else:
@@ -162,9 +162,9 @@ async def generate_ca(request: Request, token: dict = Depends(require_admin)):
             x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
             x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"California"),
             x509.NameAttribute(NameOID.LOCALITY_NAME, u"San Francisco"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Enterprise NGFW"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Enterprise CyberNexus"),
             x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, u"Security Appliances"),
-            x509.NameAttribute(NameOID.COMMON_NAME, u"Enterprise NGFW Root CA"),
+            x509.NameAttribute(NameOID.COMMON_NAME, u"Enterprise CyberNexus Root CA"),
         ])
         
         # Build Certificate

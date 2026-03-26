@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Authentication & Authorization Layer
+Enterprise CyberNexus - Authentication & Authorization Layer
 Handles JWT token creation, verification, and role-based access control (RBAC).
 """
 import os
@@ -17,14 +17,14 @@ from pydantic import BaseModel
 logger = logging.getLogger(__name__)
 
 # ==================== JWT Configuration ====================
-_env_secret = os.getenv("NGFW_SECRET_KEY", "")
+_env_secret = os.getenv("CyberNexus_SECRET_KEY", "")
 
 SECRET_KEY = _env_secret if _env_secret else secrets.token_hex(32)
 if not _env_secret:
-    logger.warning("⚠️ NGFW_SECRET_KEY not set! Using auto-generated key. Set for production.")
+    logger.warning("⚠️ CyberNexus_SECRET_KEY not set! Using auto-generated key. Set for production.")
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("NGFW_TOKEN_EXPIRE_MINUTES", "30"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("CyberNexus_TOKEN_EXPIRE_MINUTES", "30"))
 # ==================== Pydantic Models ====================
 class Token(BaseModel):
     access_token: str
@@ -101,7 +101,7 @@ def make_permission_checker(resource: str):
 
         # Read allowed resources from DB
         try:
-            db = request.app.state.ngfw.db
+            db = request.app.state.CyberNexus.db
             with db.session() as session:
                 from system.database.database import Rule, User
                 user = session.query(User).filter(User.username == token_data["sub"]).first()

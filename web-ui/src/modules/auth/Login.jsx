@@ -9,11 +9,11 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [form, setForm]         = useState({ username: '', password: '' });
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [form, setForm] = useState({ username: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const [mounted, setMounted]   = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
@@ -29,8 +29,8 @@ export default function Login() {
       navigate('/');
     } catch (err) {
       if (err.response?.data?.detail) {
-        setError(typeof err.response.data.detail === 'string' 
-          ? err.response.data.detail 
+        setError(typeof err.response.data.detail === 'string'
+          ? err.response.data.detail
           : JSON.stringify(err.response.data.detail));
       } else {
         setError('Invalid credentials or connection error. Please try again.');
@@ -59,7 +59,7 @@ export default function Login() {
               <Shield size={26} color="#fff" />
             </div>
             <div>
-              <h1 className="lp-title">NGFW Console</h1>
+              <h1 className="lp-title">CyberNexus Console</h1>
               <p className="lp-subtitle">Enterprise Next-Generation Firewall</p>
             </div>
           </div>
@@ -157,7 +157,7 @@ export default function Login() {
       {/* ══════════════════════ RIGHT — VISUAL PANEL ══════════════════════ */}
       <div className="lp-right">
         <div className="lp-right-overlay" />
-        <img src={loginVisual} alt="NGFW Security Visual" className="lp-visual-img" />
+        <img src={loginVisual} alt="CyberNexus Security Visual" className="lp-visual-img" />
 
         {/* Floating stat cards */}
         <div className="lp-float-card lp-float-top">
@@ -187,7 +187,7 @@ export default function Login() {
         {/* Brand watermark */}
         <div className="lp-watermark">
           <Shield size={18} />
-          Enterprise NGFW v4
+          Enterprise CyberNexus v4
         </div>
       </div>
 

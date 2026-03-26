@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF Module API Router
+Enterprise CyberNexus — WAF Module API Router
 
 Endpoints:
   GET  /api/v1/waf/status          - WAF module status
@@ -108,6 +108,9 @@ async def waf_status(token: dict = Depends(require_waf)):
                 "waap_fingerprint": cfg.fingerprint.enabled,
                 "waap_ato":       cfg.ato_protector.enabled,
                 "waap_rate_limit": cfg.rate_limiter.enabled,
+                "waap_graphql":   cfg.graphql_inspector.enabled,
+                "ebpf_fast_path": cfg.ebpf_acceleration.enabled,
+                "xai_explainer":  cfg.xai_explainer.enabled,
                 "self_learning":  getattr(cfg, 'self_learning', None) and cfg.self_learning.enabled,
                 "deception_engine": getattr(cfg, 'deception_engine', None) and cfg.deception_engine.enabled,
             },
@@ -250,7 +253,7 @@ async def start_gnn_training(request: TrainRequest, token: dict = Depends(requir
     Uses real session_logs.csv if available, otherwise synthetic data.
     Returns immediately — poll /gnn/train/status for progress.
     """
-    from modules.waf.engine.core.gnn_trainer import GNNTrainingJob, TrainingState
+    from modules.waf.engine.core.models.gnn_trainer import GNNTrainingJob, TrainingState
 
     if GNNTrainingJob.is_running():
         raise HTTPException(
@@ -281,7 +284,7 @@ async def start_gnn_training(request: TrainRequest, token: dict = Depends(requir
 @router.get("/gnn/train/status")
 async def get_training_status(token: dict = Depends(require_waf)):
     """Return the current GNN training job progress and results."""
-    from modules.waf.engine.core.gnn_trainer import GNNTrainingJob
+    from modules.waf.engine.core.models.gnn_trainer import GNNTrainingJob
 
     with GNNTrainingJob._instance_lock:
         job = GNNTrainingJob._active_job
@@ -368,7 +371,7 @@ async def apply_rate_limit_config(request: RateLimitConfigRequest, token: dict =
 
 @router.put("/waap/toggle/{feature}")
 async def toggle_waap_feature(feature: str, request: ToggleRequest, token: dict = Depends(require_admin)):
-    """Toggle specific WAAP features (api_schema, fingerprint, ato, rate_limit, self_learning)."""
+    """Toggle specific WAAP features (api_schema, fingerprint, ato, rate_limit, xai, graphql, ebpf, self_learning)."""
     cfg = _get_waf_settings()
     if feature == "api_schema":
         cfg.api_schema.enabled = request.enabled
@@ -378,6 +381,12 @@ async def toggle_waap_feature(feature: str, request: ToggleRequest, token: dict 
         cfg.ato_protector.enabled = request.enabled
     elif feature == "rate_limit":
         cfg.rate_limiter.enabled = request.enabled
+    elif feature == "xai":
+        cfg.xai_explainer.enabled = request.enabled
+    elif feature == "graphql":
+        cfg.graphql_inspector.enabled = request.enabled
+    elif feature == "ebpf":
+        cfg.ebpf_acceleration.enabled = request.enabled
     elif feature == "self_learning":
         cfg.self_learning.enabled = request.enabled
     elif feature == "deception_engine":

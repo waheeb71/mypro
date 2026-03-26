@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - VPN REST API
+Enterprise CyberNexus - VPN REST API
 ================================
 Prefix: /api/v1/vpn
 
@@ -50,11 +50,11 @@ class VPNConfigRequest(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _get_vpn_manager(request: Request):
-    ngfw = getattr(request.app.state, 'ngfw', None)
-    if not ngfw:
+    CyberNexus = getattr(request.app.state, 'CyberNexus', None)
+    if not CyberNexus:
         return None
         
-    vpn_mgr = getattr(ngfw, 'vpn_manager', None)
+    vpn_mgr = getattr(CyberNexus, 'vpn_manager', None)
     if vpn_mgr:
         return vpn_mgr
         
@@ -63,9 +63,9 @@ def _get_vpn_manager(request: Request):
         from modules.vpn.engine.wireguard import WireGuardManager
         import logging
         logger = logging.getLogger('vpn_api')
-        ngfw.vpn_enabled = True
-        ngfw.vpn_manager = WireGuardManager(interface='wg0', logger=logger)
-        return ngfw.vpn_manager
+        CyberNexus.vpn_enabled = True
+        CyberNexus.vpn_manager = WireGuardManager(interface='wg0', logger=logger)
+        return CyberNexus.vpn_manager
     except BaseException:
         pass
         

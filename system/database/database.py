@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enterprise NGFW - Database Layer
+Enterprise CyberNexus - Database Layer
 
 SQLAlchemy models for persistent storage:
 - User: user accounts with hashed passwords
@@ -457,14 +457,14 @@ class DatabaseManager:
     Database connection and session management
 
     Usage:
-        db = DatabaseManager('sqlite:///ngfw.db')
+        db = DatabaseManager('sqlite:///CyberNexus.db')
         db.initialize()
 
         with db.session() as session:
             user = session.query(User).filter_by(username='admin').first()
     """
 
-    def __init__(self, database_url: str = 'sqlite:///ngfw.db'):
+    def __init__(self, database_url: str = 'sqlite:///CyberNexus.db'):
         self.database_url = database_url
         self.engine = None
         self._session_factory = None

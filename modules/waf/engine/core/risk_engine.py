@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF Risk Scoring Engine
+Enterprise CyberNexus — WAF Risk Scoring Engine
 
 Combines scores from multiple AI models into a single Risk Score [0.0, 1.0]
 and maps it to a policy decision: ALLOW / CHALLENGE / BLOCK.
@@ -76,12 +76,12 @@ class RiskBreakdown:
 
     def to_dict(self) -> dict:
         return {
-            "nlp":        round(self.nlp_score,        4),
-            "anomaly":    round(self.anomaly_score,    4),
-            "bot":        round(self.bot_score,        4),
-            "reputation": round(self.reputation_score, 4),
-            "honeypot":   round(self.honeypot_boost,   4),
-            "final_score":round(self.final_score,      4),
+            "nlp":        float(f"{self.nlp_score:.4f}"),
+            "anomaly":    float(f"{self.anomaly_score:.4f}"),
+            "bot":        float(f"{self.bot_score:.4f}"),
+            "reputation": float(f"{self.reputation_score:.4f}"),
+            "honeypot":   float(f"{self.honeypot_boost:.4f}"),
+            "final_score":float(f"{self.final_score:.4f}"),
             "decision":   self.decision.value,
         }
 
@@ -135,20 +135,23 @@ class RiskScoringEngine:
         bot_score:        float = 0.0,
         reputation_score: float = 0.0,
         honeypot_boost:   float = 0.0,
+        intent_proven:    bool  = False,  # True if Canary was tripped
     ) -> RiskBreakdown:
         """
         Calculate the aggregated risk score and policy decision.
-
-        Args:
-            nlp_score:        0–1, from NLP attack detection model
-            anomaly_score:    0–1, from behavioral anomaly detector
-            bot_score:        0–1, from bot detection model
-            reputation_score: 0–1, from threat intelligence (1 = known bad IP)
-            honeypot_boost:   0–1, additional boost if honeypot was triggered
-
-        Returns:
-            RiskBreakdown with final_score and decision
+        If Intent is proven via Deception Engine, immediately jump to 1.0.
         """
+        if intent_proven:
+            return RiskBreakdown(
+                nlp_score=nlp_score,
+                anomaly_score=anomaly_score,
+                bot_score=bot_score,
+                reputation_score=reputation_score,
+                honeypot_boost=1.0,
+                final_score=1.0,
+                decision=PolicyDecision.BLOCK
+            )
+
         # Clamp all inputs to [0, 1]
         nlp         = self._clamp(nlp_score)
         anomaly     = self._clamp(anomaly_score)
@@ -156,24 +159,26 @@ class RiskScoringEngine:
         reputation  = self._clamp(reputation_score)
         honeypot    = self._clamp(honeypot_boost)
 
+        # Dynamic Adaptive Weights: If Reputation is high, we trust the model less
+        # and rely more on threat intelligence.
+        dyn_w_rep = self.w_reputation + (0.2 if reputation > 0.8 else 0.0)
+        dyn_w_bot = self.w_bot + (0.1 if bot > 0.8 else 0.0)
+        
         score = (
             nlp        * self.w_nlp        +
             anomaly    * self.w_anomaly    +
-            bot        * self.w_bot        +
-            reputation * self.w_reputation +
+            bot        * dyn_w_bot         +
+            reputation * dyn_w_rep         +
             honeypot   * self.w_honeypot
         )
 
-        # Normalize — in case weights don't exactly sum to 1.0
         weight_sum = (
-            self.w_nlp + self.w_anomaly + self.w_bot +
-            self.w_reputation + self.w_honeypot
+            self.w_nlp + self.w_anomaly + dyn_w_bot + dyn_w_rep + self.w_honeypot
         )
         if weight_sum > 0:
             score /= weight_sum
 
         score = self._clamp(score)
-
         decision = self._decide(score)
 
         breakdown = RiskBreakdown(
@@ -192,6 +197,16 @@ class RiskScoringEngine:
         )
 
         return breakdown
+
+    def explain_decision(self, breakdown: RiskBreakdown) -> str:
+        """Return an XAI (Explainable AI) formatted string describing the risk score."""
+        try:
+            from modules.waf.engine.core.xai_explainer import WAFExplainer
+            explainer = WAFExplainer()
+            return explainer.explain(breakdown)
+        except Exception as e:
+            logger.debug(f"XAI explanation failed: {e}")
+            return "XAI Explainer unavailable."
 
     def decide(self, risk_score: float) -> PolicyDecision:
         """Map a raw risk score to a PolicyDecision (standalone helper)."""

@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Sender Reputation Checker
+Enterprise CyberNexus — Sender Reputation Checker
 
 Verifies sender legitimacy through:
   1. SPF  — Is the sender IP authorized by the domain?

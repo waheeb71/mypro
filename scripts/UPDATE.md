@@ -4,7 +4,7 @@
 `scripts/update.sh`
 
 ## الغرض
-تحديث نظام NGFW المثبَّت. يستخدم API النظام بشكل أساسي، وينتقل إلى git مباشرةً إذا كان API غير متاح.
+تحديث نظام CyberNexus المثبَّت. يستخدم API النظام بشكل أساسي، وينتقل إلى git مباشرةً إذا كان API غير متاح.
 
 ## الاستخدام
 
@@ -19,7 +19,7 @@ sudo ./scripts/update.sh --branch v2.1
 sudo ./scripts/update.sh --check-only
 
 # تحديث مع API مخصص
-./scripts/update.sh --api-url http://ngfw-server:8000
+./scripts/update.sh --api-url http://CyberNexus-server:8000
 ```
 
 ## طريقة العمل
@@ -38,7 +38,7 @@ update.sh
            ├── git pull
            ├── pip install -r requirements.txt
            ├── alembic upgrade head
-           └── systemctl restart ngfw
+           └── systemctl restart CyberNexus
 ```
 
 ## التحديث عبر API (الطريقة المفضلة)
@@ -69,12 +69,12 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 | المتغير | الافتراضي | الوصف |
 |---------|-----------|-------|
-| `NGFW_API_URL` | `http://localhost:8000` | عنوان API |
-| `NGFW_ADMIN_USER` | `admin` | اسم المدير |
-| `NGFW_ADMIN_PASS` | `admin123` | كلمة مرور المدير |
-| `NGFW_HOME` | `/opt/enterprise_ngfw` | مجلد التثبيت |
+| `CyberNexus_API_URL` | `http://localhost:8000` | عنوان API |
+| `CyberNexus_ADMIN_USER` | `admin` | اسم المدير |
+| `CyberNexus_ADMIN_PASS` | `admin123` | كلمة مرور المدير |
+| `CyberNexus_HOME` | `/opt/enterprise_CyberNexus` | مجلد التثبيت |
 
 ## سجلات التحديث
 ```
-/var/log/ngfw/update-YYYYMMDD-HHMMSS.log
+/var/log/CyberNexus/update-YYYYMMDD-HHMMSS.log
 ```

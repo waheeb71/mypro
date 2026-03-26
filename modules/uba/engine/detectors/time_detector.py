@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — UBA Time Anomaly Detector
+Enterprise CyberNexus — UBA Time Anomaly Detector
 
 Detects access at unusual hours compared to the user's established work-hour
 baseline using a 3-sigma rule applied to the per-user hour histogram.

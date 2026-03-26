@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - Threat Feed Updater
+Enterprise CyberNexus - Threat Feed Updater
 ═══════════════════════════════════════════════════════════════════
 
 Automated threat intelligence feed updater with scheduling,
@@ -87,7 +87,7 @@ class ThreatFeedUpdater:
         """
         self.threat_intel = threat_intel
         self.config = config
-        self.audit_log_path = audit_log_path or Path('/var/log/ngfw/feed_audit.log')
+        self.audit_log_path = audit_log_path or Path('/var/log/CyberNexus/feed_audit.log')
         
         # Feed configurations
         self.feeds: Dict[str, FeedConfig] = {}

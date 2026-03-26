@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF NLP Training Script
+Enterprise CyberNexus — WAF NLP Training Script
 
 Trains the 1D-CNN + BiLSTM WAF NLP model on:
   - CSIC 2010 HTTP Dataset     (SQLi, XSS, LFI attacks against web apps)

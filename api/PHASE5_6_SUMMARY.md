@@ -1,4 +1,4 @@
-# Enterprise NGFW - Phase 5 & 6 Implementation Summary
+# Enterprise CyberNexus - Phase 5 & 6 Implementation Summary
 
 ## 📋 Overview
 
@@ -301,8 +301,8 @@ ws.onmessage = (event) => {
 
 ---
 
-#### 3. **Click CLI Tool** (`api/cli/ngfw_cli.py`)
-Comprehensive command-line interface for NGFW management.
+#### 3. **Click CLI Tool** (`api/cli/CyberNexus_cli.py`)
+Comprehensive command-line interface for CyberNexus management.
 
 **Features**:
 - ✅ **Authentication Management** (login/logout)
@@ -311,52 +311,52 @@ Comprehensive command-line interface for NGFW management.
 - ✅ **IP Blocking** (block/unblock)
 - ✅ **Anomaly Monitoring** (list)
 - ✅ **IP Profiling** (show profile)
-- ✅ **Configuration Persistence** (~/.ngfw/config.yaml)
+- ✅ **Configuration Persistence** (~/.CyberNexus/config.yaml)
 - ✅ **Colored Output** (click.style)
 - ✅ **Table Formatting** (tabulate)
 
 **Installation**:
 ```bash
 cd api/cli
-chmod +x ngfw_cli.py
+chmod +x CyberNexus_cli.py
 
 # Optional: Add to PATH
-sudo ln -s $(pwd)/ngfw_cli.py /usr/local/bin/ngfw
+sudo ln -s $(pwd)/CyberNexus_cli.py /usr/local/bin/CyberNexus
 ```
 
 **Usage Examples**:
 ```bash
 # Login
-ngfw auth login --username admin --password admin123
+CyberNexus auth login --username admin --password admin123
 
 # Check status
-ngfw status show
+CyberNexus status show
 
 # View statistics
-ngfw stats show --window 300
+CyberNexus stats show --window 300
 
 # List rules
-ngfw rules list
+CyberNexus rules list
 
 # Add rule
-ngfw rules add --dst-port 22 --action BLOCK --priority 200
+CyberNexus rules add --dst-port 22 --action BLOCK --priority 200
 
 # Block IP
-ngfw block add 192.168.1.100 --duration 3600
+CyberNexus block add 192.168.1.100 --duration 3600
 
 # View anomalies
-ngfw anomalies list --limit 20
+CyberNexus anomalies list --limit 20
 
 # Show IP profile
-ngfw profile show 192.168.1.100
+CyberNexus profile show 192.168.1.100
 
 # Logout
-ngfw auth logout
+CyberNexus auth logout
 ```
 
 **Command Tree**:
 ```
-ngfw
+CyberNexus
 ├── auth
 │   ├── login
 │   ├── logout
@@ -479,10 +479,10 @@ python -m http.server 8080
 ### 4. Use the CLI
 ```bash
 cd api/cli
-chmod +x ngfw_cli.py
+chmod +x CyberNexus_cli.py
 
-./ngfw_cli.py auth login --username admin --password admin123
-./ngfw_cli.py status show
+./CyberNexus_cli.py auth login --username admin --password admin123
+./CyberNexus_cli.py status show
 ```
 
 ### 5. Test ML Components
@@ -549,7 +549,7 @@ api/
 ├── websocket/              # WebSocket
 │   └── live_updates.py        # Real-time updates
 ├── cli/                    # CLI tool
-│   └── ngfw_cli.py            # Click CLI
+│   └── CyberNexus_cli.py            # Click CLI
 └── dashboard/              # Web UI
     └── index.html             # Dashboard
 ```
@@ -659,7 +659,7 @@ See `examples/` directory for:
 
 ## 📝 License
 
-Enterprise NGFW - Proprietary Software
+Enterprise CyberNexus - Proprietary Software
 © 2024 All Rights Reserved
 
 ---

@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - HA State Synchronizer
+Enterprise CyberNexus - HA State Synchronizer
 
 Mirrors state (like new active connections, updated database rules)
 from the MASTER node to the BACKUP node to ensure a seamless failover.

@@ -1,10 +1,10 @@
 """
-Enterprise NGFW - Unified Causal Deception Engine 
+Enterprise CyberNexus - Unified Causal Deception Engine 
 (The Core Innovation: Patent Claim 1)
 
 This unified engine acts as the central hub for generating, tracking, and 
 validating contextual deception elements (Honeytokens, Fake Banners, Decoy Paths)
-across all NGFW modules (WAAP, UBA, IDS/IPS, DLP).
+across all CyberNexus modules (WAAP, UBA, IDS/IPS, DLP).
 """
 
 import uuid

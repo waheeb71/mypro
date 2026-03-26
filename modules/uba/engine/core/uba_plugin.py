@@ -1,7 +1,7 @@
 """
-Enterprise NGFW — UBA Inspector Plugin
+Enterprise CyberNexus — UBA Inspector Plugin
 
-Bridges the NGFW inspection pipeline to the UBA behavioral engine.
+Bridges the CyberNexus inspection pipeline to the UBA behavioral engine.
 Extracts user identity from the InspectionContext metadata and calls
 the UserProfiler to analyze behavior in real time.
 

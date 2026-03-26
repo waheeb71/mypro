@@ -73,7 +73,7 @@ PUT /api/v1/modules/waf/toggle
 ## متغيرات البيئة
 | المتغير | القيمة الافتراضية | الوصف |
 |---------|------------------|--------|
-| `NGFW_CONFIG` | `/etc/ngfw/config.yaml` | مسار ملف الإعدادات في الإنتاج |
-| `NGFW_ENV` | `production` | بيئة التشغيل (`production`/`development`) |
-| `NGFW_SECRET_KEY` | مُولَّد تلقائياً | مفتاح JWT (يجب تعيينه في الإنتاج) |
-| `NGFW_ADMIN_PASSWORD` | `admin123` | كلمة مرور المدير الافتراضية |
+| `CyberNexus_CONFIG` | `/etc/CyberNexus/config.yaml` | مسار ملف الإعدادات في الإنتاج |
+| `CyberNexus_ENV` | `production` | بيئة التشغيل (`production`/`development`) |
+| `CyberNexus_SECRET_KEY` | مُولَّد تلقائياً | مفتاح JWT (يجب تعيينه في الإنتاج) |
+| `CyberNexus_ADMIN_PASSWORD` | `admin123` | كلمة مرور المدير الافتراضية |

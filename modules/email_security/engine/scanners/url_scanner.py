@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Email URL Scanner
+Enterprise CyberNexus — Email URL Scanner
 
 Scans URLs found in emails for:
   1. Redirect chains / URL shorteners hiding real destination

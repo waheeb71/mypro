@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - Unit Tests for Unified Event Sink
+Enterprise CyberNexus - Unit Tests for Unified Event Sink
 
 Tests for:
 - Event submission

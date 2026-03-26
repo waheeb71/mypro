@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - VPN Integration
+Enterprise CyberNexus - VPN Integration
 
 Provides VPN connection capabilities.
 """

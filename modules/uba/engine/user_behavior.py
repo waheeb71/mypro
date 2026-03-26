@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - User Behavior Analytics (UBA)
+Enterprise CyberNexus - User Behavior Analytics (UBA)
 
 Identifies anomalous user activity using profiling and basic 
 Isolation Forest concepts (simplified for real-time inference).

@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF NLP Model
+Enterprise CyberNexus — WAF NLP Model
 Architecture: Char-level 1D-CNN + BiLSTM
 
 Why char-level?

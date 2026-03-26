@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Phishing Detector
+Enterprise CyberNexus — Phishing Detector
 
 Detects phishing attempts in email subject + body using:
   1. Keyword heuristics (expanded multilingual list)

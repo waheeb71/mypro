@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - XDP Runtime Mode Switching
+Enterprise CyberNexus - XDP Runtime Mode Switching
 
 Provides functionality to switch XDP modes at runtime without
 restarting the service.

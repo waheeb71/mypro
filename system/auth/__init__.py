@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - LDAP/AD Authentication Integration
+Enterprise CyberNexus - LDAP/AD Authentication Integration
 
 Provides LDAP user authentication with Active Directory
 group-to-role mapping.

@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - DNS Inspector Plugin
+Enterprise CyberNexus v2.0 - DNS Inspector Plugin
 
 Deep inspection of DNS traffic.
 
@@ -11,7 +11,7 @@ Features:
 - Suspicious TLD detection
 - Query rate limiting
 
-Author: Enterprise NGFW Team
+Author: Enterprise CyberNexus Team
 License: Proprietary
 """
 

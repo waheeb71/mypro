@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - System Status & Health Endpoints
+Enterprise CyberNexus - System Status & Health Endpoints
 GET  /api/v1/status          — Full system status  (operator+)
 GET  /health                 — Liveness probe (public)
 GET  /api/v1/health/liveness — Kubernetes liveness (public)
@@ -45,9 +45,9 @@ async def health_check():
 async def liveness_probe(request: Request):
     """Kubernetes liveness probe (no auth)."""
     try:
-        ngfw = getattr(request.app.state, "ngfw_app", None)
-        if ngfw and hasattr(ngfw, "health_checker"):
-            alive = await ngfw.health_checker.liveness_probe()
+        CyberNexus = getattr(request.app.state, "CyberNexus_app", None)
+        if CyberNexus and hasattr(CyberNexus, "health_checker"):
+            alive = await CyberNexus.health_checker.liveness_probe()
             if not alive:
                 return JSONResponse(status_code=503, content={"status": "dead"})
         return {"status": "alive", "timestamp": datetime.utcnow()}
@@ -59,9 +59,9 @@ async def liveness_probe(request: Request):
 async def readiness_probe(request: Request):
     """Kubernetes readiness probe (no auth)."""
     try:
-        ngfw = getattr(request.app.state, "ngfw_app", None)
-        if ngfw and hasattr(ngfw, "health_checker"):
-            ready = await ngfw.health_checker.readiness_probe()
+        CyberNexus = getattr(request.app.state, "CyberNexus_app", None)
+        if CyberNexus and hasattr(CyberNexus, "health_checker"):
+            ready = await CyberNexus.health_checker.readiness_probe()
             if not ready:
                 return JSONResponse(status_code=503, content={"status": "not_ready"})
             return {"status": "ready", "timestamp": datetime.utcnow()}
@@ -73,9 +73,9 @@ async def readiness_probe(request: Request):
 @router.get("/api/v1/health/detailed")
 async def detailed_health(request: Request, token: dict = Depends(verify_token)):
     """Detailed per-component health check (authenticated users)."""
-    ngfw = getattr(request.app.state, "ngfw_app", None)
-    if ngfw and hasattr(ngfw, "health_checker"):
-        return await ngfw.health_checker.check_all_components()
+    CyberNexus = getattr(request.app.state, "CyberNexus_app", None)
+    if CyberNexus and hasattr(CyberNexus, "health_checker"):
+        return await CyberNexus.health_checker.check_all_components()
     return {"overall_status": "unknown", "message": "Health checker not available"}
 
 
@@ -84,15 +84,15 @@ async def get_status(request: Request, token: dict = Depends(require_operator)):
     """Full system metrics — operators and admins only."""
     import psutil
 
-    ngfw = getattr(request.app.state, "ngfw_app", None)
+    CyberNexus = getattr(request.app.state, "CyberNexus_app", None)
     ha_state, ha_peer, ha_priority, uptime = "MASTER", None, 100, 0.0
 
-    if ngfw:
-        uptime = ngfw.get_uptime() if hasattr(ngfw, "get_uptime") else 0.0
-        if getattr(ngfw, "ha_manager", None):
-            ha_state = ngfw.ha_manager.state.name
-            ha_peer = ngfw.ha_manager.peer_ip
-            ha_priority = ngfw.ha_manager.priority
+    if CyberNexus:
+        uptime = CyberNexus.get_uptime() if hasattr(CyberNexus, "get_uptime") else 0.0
+        if getattr(CyberNexus, "ha_manager", None):
+            ha_state = CyberNexus.ha_manager.state.name
+            ha_peer = CyberNexus.ha_manager.peer_ip
+            ha_priority = CyberNexus.ha_manager.priority
 
     return SystemStatus(
         status="operational",

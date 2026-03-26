@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — AI-Powered Web Application Firewall (WAF) Inspector
+Enterprise CyberNexus — AI-Powered Web Application Firewall (WAF) Inspector
 
 Settings are loaded from:  config/defaults/waf.yaml
 Local overrides from:      config/waf.local.yaml  (not committed to git)
@@ -44,20 +44,22 @@ from system.inspection_core.framework.plugin_base import (
     InspectorPlugin, InspectionContext, InspectionFinding,
     InspectionResult, InspectionAction, PluginPriority,
 )
-from modules.waf.engine.core.preprocessor      import WAFPreprocessor
-from modules.waf.engine.core.feature_extractor import WafFeatureExtractor
-from modules.waf.engine.core.honeypot          import HoneypotGuard
-from modules.waf.engine.core.risk_engine       import RiskScoringEngine, PolicyDecision
+from modules.waf.engine.core.analysis.preprocessor      import WAFPreprocessor
+from modules.waf.engine.core.analysis.feature_extractor import WafFeatureExtractor
+from modules.waf.engine.core.defenses.honeypot          import HoneypotGuard
+from modules.waf.engine.core.decision.risk_engine       import RiskScoringEngine, PolicyDecision
 from modules.waf.engine.core.settings          import WAFSettings, get_waf_settings
 
 # New WAAP Modules
-from modules.waf.engine.core.api_schema_validator import APISchemaValidator
-from modules.waf.engine.core.fingerprinting       import AdvancedFingerprinting
-from modules.waf.engine.core.ato_protector        import ATOProtector
-from modules.waf.engine.core.rate_limiter         import AdaptiveRateLimiter
-from modules.waf.engine.core.shadow_autopilot     import ShadowAutopilot
-from modules.waf.engine.core.self_learning_logger  import WAFSelfLearningLogger
-from modules.waf.engine.core.deception_engine      import DeceptionEngine
+from modules.waf.engine.core.defenses.api_schema_validator import APISchemaValidator
+from modules.waf.engine.core.defenses.fingerprinting       import AdvancedFingerprinting
+from modules.waf.engine.core.defenses.ato_protector        import ATOProtector
+from modules.waf.engine.core.defenses.rate_limiter         import AdaptiveRateLimiter
+from modules.waf.engine.core.advanced.shadow_autopilot     import ShadowAutopilot
+from modules.waf.engine.core.decision.self_learning_logger  import WAFSelfLearningLogger
+from modules.waf.engine.core.advanced.deception_engine      import DeceptionEngine
+from modules.waf.engine.core.defenses.graphql_inspector     import GraphQLInspector
+from modules.waf.engine.core.acceleration.ebpf_acceleration     import EBPFManager
 
 if TYPE_CHECKING:
     from modules.ids_ips.engine.core.threat_intel import ThreatIntelCache
@@ -141,6 +143,15 @@ class WAFInspectorPlugin(InspectorPlugin):
             user_rate_limit=self.cfg.rate_limiter.user_rate_limit,
             time_window_seconds=self.cfg.rate_limiter.time_window_seconds
         )
+        self.graphql_inspector = GraphQLInspector(
+            max_depth=self.cfg.graphql_inspector.max_depth,
+            max_batched_queries=self.cfg.graphql_inspector.max_batched_queries,
+            detect_introspection=self.cfg.graphql_inspector.detect_introspection
+        )
+        self.ebpf_manager = EBPFManager(
+            map_size=self.cfg.ebpf_acceleration.bpf_map_size,
+            action=self.cfg.ebpf_acceleration.fast_drop_action
+        )
         rs = self.cfg.risk_scoring.thresholds
         self.risk_engine = RiskScoringEngine(
             w_nlp        = self.cfg.nlp.weight,
@@ -189,7 +200,7 @@ class WAFInspectorPlugin(InspectorPlugin):
         global _gnn_log_collector
         if self.cfg.gnn.log_sessions:
             try:
-                from modules.waf.engine.core.session_log_collector import SessionLogCollector
+                from modules.waf.engine.core.analysis.session_log_collector import SessionLogCollector
                 _gnn_log_collector = SessionLogCollector(
                     output_path  = self.cfg.gnn.logs_path,
                     max_records  = self.cfg.gnn.max_log_records,
@@ -265,6 +276,13 @@ class WAFInspectorPlugin(InspectorPlugin):
                     recommends_block=True,
                 )],
                 metadata={"waf": "blacklisted"},
+            )
+
+        # ── eBPF FAST PATH KERNEL DROP CHECK (SIMULATED) ──────────────
+        if self.cfg.ebpf_acceleration.enabled and self.ebpf_manager.is_offloaded(context.src_ip):
+            return InspectionResult(
+                action=InspectionAction.BLOCK, # Translated to hardware drop dynamically
+                metadata={"waf": "ebpf_kernel_drop", "latency_ms": 0.01}
             )
 
         # Outbound traffic is skipped (unless explicitly enabled)
@@ -359,8 +377,8 @@ class WAFInspectorPlugin(InspectorPlugin):
                  honeypot_boost += (fp_result.risk_score * 0.5) # Weight it into the final WAF risk
 
         # ── 1.4 API SCHEMA VALIDATION ─────────────────────────────────
+        content_type = context.metadata.get("request_headers", {}).get("content-type", "")
         if self.cfg.api_schema.enabled:
-            content_type = context.metadata.get("request_headers", {}).get("content-type", "")
             api_val = self.api_validator.validate(request_path, data, content_type)
             if not api_val.is_valid:
                  findings.append(InspectionFinding(
@@ -372,6 +390,22 @@ class WAFInspectorPlugin(InspectorPlugin):
                      recommends_block=api_val.violation_score > 0.6
                  ))
                  honeypot_boost += api_val.violation_score
+
+        # ── 1.5 GRAPHQL DEEP INSPECTION ───────────────────────────────
+        if self.cfg.graphql_inspector.enabled:
+             # Basic decode for JSON payload inspection
+             raw_decoded = data.decode('utf-8', errors='ignore')
+             is_gql, gql_val = self.graphql_inspector.inspect(raw_decoded, content_type)
+             if is_gql and not gql_val.is_valid:
+                 findings.append(InspectionFinding(
+                     plugin_name="waap_graphql_inspector",
+                     severity="HIGH" if gql_val.violation_score > 0.7 else "MEDIUM",
+                     category="GraphQL Attack Detected",
+                     description=gql_val.violation_reason,
+                     confidence=gql_val.violation_score,
+                     recommends_block=gql_val.violation_score > 0.6
+                 ))
+                 honeypot_boost += gql_val.violation_score
 
         # ── 2. PREPROCESSING ─────────────────────────────────────────
         if self.cfg.preprocessing.enabled:
@@ -393,6 +427,8 @@ class WAFInspectorPlugin(InspectorPlugin):
                 logger.debug("Shadow Autopilot Observe error: %s", e)
 
         # ── 2.8 INTENT-PROVING DECEPTION CHECK (PATENT POC) ──────────
+        intent_proven = False
+        evidence = ""
         if self.deception_engine:
             intent_proven, intent_score, evidence = self.deception_engine.analyze_request(
                 payload_str=decoded_text,
@@ -408,12 +444,8 @@ class WAFInspectorPlugin(InspectorPlugin):
                     recommends_block=True
                 ))
                 logger.critical("INTENT PROVEN: %s", evidence)
-                # Absolute proof overrides further models and blocks immediately
-                return InspectionResult(
-                    action=InspectionAction.BLOCK,
-                    findings=findings,
-                    metadata={"waf": "intent_proven_block", "reason": evidence, "risk_score": 1.0}
-                )
+                # We do NOT return early here anymore; we let the RiskEngine compute 
+                # the 100% breakdown for unified logging.
 
         # ── 3. FEATURE EXTRACTION ────────────────────────────────────
         waf_features = {}
@@ -461,6 +493,7 @@ class WAFInspectorPlugin(InspectorPlugin):
             bot_score        = bot_score,
             reputation_score = reputation_score,
             honeypot_boost   = honeypot_boost,
+            intent_proven    = intent_proven,
         )
 
         risk_score = breakdown.final_score
@@ -478,6 +511,12 @@ class WAFInspectorPlugin(InspectorPlugin):
             action = InspectionAction.QUARANTINE  # let upstream issue CAPTCHA
         else:
             action = InspectionAction.ALLOW
+
+        # ── 6.1 eBPF OFFLOADING ──────────────────────────────────────
+        if action == InspectionAction.BLOCK and self.cfg.ebpf_acceleration.enabled:
+            # If the block was critical enough, drop future packets in Kernel space
+            if risk_score > 0.85:
+                 self.ebpf_manager.offload_to_kernel(context.src_ip, f"WAF Risk: {risk_score:.2f}")
 
         # ── Build findings for significant threats ────────────────────
         if nlp_score > 0.5:
@@ -515,7 +554,7 @@ class WAFInspectorPlugin(InspectorPlugin):
 
         # ── 6.5 DECOY INJECTION TRIGGER ──────────────────────────────
         waf_decoy_payload = None
-        if self.deception_engine and action != InspectionAction.BLOCK:
+        if self.deception_engine is not None and action != InspectionAction.BLOCK:
             if self.cfg.deception_engine.injection_threshold <= risk_score < self.cfg.risk_scoring.thresholds.block:
                 session_id = context.metadata.get("session_id", context.src_ip)
                 surface = "bola"
@@ -528,6 +567,15 @@ class WAFInspectorPlugin(InspectorPlugin):
                     attack_surface=surface
                 )
                 logger.info("Injecting Decoy Object for IP %s (Risk: %.2f)", context.src_ip, risk_score)
+
+        # ── 7. XAI EXPLANATION DECODING ──────────────────────────────
+        xai_explanation = ""
+        if self.cfg.xai_explainer.enabled and risk_score > 0.0:
+            xai_explanation = self.risk_engine.explain_decision(breakdown)
+            
+            # Attach XAI context to the highest severity finding for SIEM export
+            if findings:
+                findings[0].metadata["xai_context"] = xai_explanation
 
         # ── Assemble result ──────────────────────────────────────────
         latency_ms = (time.time() - t_start) * 1000
@@ -546,6 +594,7 @@ class WAFInspectorPlugin(InspectorPlugin):
                 "bot_label":        bot_label,
                 "latency_ms":       round(latency_ms, 2),
                 "waf_decoy_payload": waf_decoy_payload,  # Signal for API Router to attach decoy header
+                "xai_explanation":  xai_explanation,      # Add Transparent Context
             },
         )
 
@@ -590,7 +639,8 @@ class WAFInspectorPlugin(InspectorPlugin):
                         "action": action.name,
                         "risk_score": round(risk_score, 2),
                         "latency_ms": round(latency_ms, 2),
-                        "triggers": [f.category for f in findings]
+                        "triggers": [f.category for f in findings],
+                        "xai_explanation": xai_explanation
                     }))
             except Exception as e:
                 logger.debug("Failed to dispatch live event: %s", e)

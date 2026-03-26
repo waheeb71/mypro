@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - Decision TTL Manager
+Enterprise CyberNexus - Decision TTL Manager
 ═══════════════════════════════════════════════════════════════════
 
 Manages TTL (Time-To-Live) for temporary decisions like blocks,

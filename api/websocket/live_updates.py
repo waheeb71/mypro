@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enterprise NGFW - WebSocket Real-time Updates
+Enterprise CyberNexus - WebSocket Real-time Updates
 Live statistics, traffic monitoring, and alert notifications
 """
 
@@ -22,7 +22,7 @@ except ImportError:
     # Fallback for standalone usage
     import os
     import secrets as _secrets
-    SECRET_KEY = os.getenv("NGFW_SECRET_KEY", _secrets.token_hex(32))
+    SECRET_KEY = os.getenv("CyberNexus_SECRET_KEY", _secrets.token_hex(32))
     ALGORITHM = "HS256"
 
 logger = logging.getLogger(__name__)

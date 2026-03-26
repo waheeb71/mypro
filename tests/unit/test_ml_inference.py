@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - Unit Tests for ML Inference
+Enterprise CyberNexus - Unit Tests for ML Inference
 
 Tests for:
 - AnomalyDetector: feature extraction, scoring, pattern recognition

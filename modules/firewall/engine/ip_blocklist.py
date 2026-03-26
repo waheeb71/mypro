@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — IP Blocklist Manager
+Enterprise CyberNexus — IP Blocklist Manager
 ==========================================
 Manages the runtime IP blocklist that is enforced at two layers:
   1. eBPF/XDP kernel level — ultra-fast zero-copy drops via xdp_engine.

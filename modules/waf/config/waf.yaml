@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════
-#  Enterprise NGFW — AI-WAF Configuration
+#  Enterprise CyberNexus — AI-WAF Configuration
 #  File: config/defaults/waf.yaml
 #
 #  يمكن تفعيل أو إلغاء تفعيل WAF بالكامل أو كل ميزة على حدة
@@ -225,4 +225,4 @@ waf:
     log_challenged: true
     log_allowed:    false
     include_payload: false      # ⚠️ احذر — قد يحتوي على بيانات حساسة
-    log_file: "/var/log/ngfw/waf.log"
+    log_file: "/var/log/CyberNexus/waf.log"

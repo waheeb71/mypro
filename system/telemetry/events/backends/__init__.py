@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Event Backends
+Enterprise CyberNexus - Event Backends
 Pluggable backends for event storage and streaming.
 """
 

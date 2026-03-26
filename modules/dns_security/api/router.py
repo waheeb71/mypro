@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 — DNS Security API Router
+Enterprise CyberNexus v2.0 — DNS Security API Router
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status

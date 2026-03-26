@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Union
 
 # Resolve base project directory relative to this file
-# system/core/path_manager.py -> system/core -> system -> enterprise_ngfw
+# system/core/path_manager.py -> system/core -> system -> enterprise_CyberNexus
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Centralized common directories

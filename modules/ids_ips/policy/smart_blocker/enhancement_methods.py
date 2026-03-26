@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - Decision Engine Enhancement Methods
+Enterprise CyberNexus - Decision Engine Enhancement Methods
 
 Additional methods for Phase 2 enhancements:
 - Rate limiting

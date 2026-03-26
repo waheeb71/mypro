@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════
-# Enterprise NGFW - Base Requirements
+# Enterprise CyberNexus - Base Requirements
 # ═══════════════════════════════════════════════════════════════════
 
 # Web Framework & API

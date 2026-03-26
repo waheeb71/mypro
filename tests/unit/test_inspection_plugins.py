@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - Unit Tests for Inspection Plugins
+Enterprise CyberNexus - Unit Tests for Inspection Plugins
 
 Tests for:
 - HTTP Inspector (SQL injection, XSS, path traversal)

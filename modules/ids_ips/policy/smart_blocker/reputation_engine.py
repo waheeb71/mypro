@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - Reputation Engine
+Enterprise CyberNexus v2.0 - Reputation Engine
 
 IP and domain reputation scoring system with dynamic scoring,
 historical tracking, and decay mechanisms.
@@ -12,7 +12,7 @@ Features:
 - Reputation categories (trusted/suspicious/malicious)
 - Whitelist/blacklist overrides
 
-Author: Enterprise NGFW Team
+Author: Enterprise CyberNexus Team
 License: Proprietary
 """
 

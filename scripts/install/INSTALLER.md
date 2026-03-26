@@ -16,7 +16,7 @@ sudo python3 scripts/install/smart_install.py
 sudo GEMINI_API_KEY="your-key" python3 scripts/install/smart_install.py
 
 # تحديد مجلد التثبيت
-sudo NGFW_HOME="/opt/my-ngfw" python3 scripts/install/smart_install.py
+sudo CyberNexus_HOME="/opt/my-CyberNexus" python3 scripts/install/smart_install.py
 ```
 
 ## ما يفعله تلقائياً
@@ -25,12 +25,12 @@ sudo NGFW_HOME="/opt/my-ngfw" python3 scripts/install/smart_install.py
 |--------|-------|
 | 1 | اكتشاف توزيعة Linux (Debian/Ubuntu/RHEL/Kali) |
 | 2 | تثبيت حزم النظام (`python3`, `git`, `iptables`, إلخ) |
-| 3 | نسخ الملفات إلى مجلد التثبيت (`/opt/enterprise_ngfw`) |
+| 3 | نسخ الملفات إلى مجلد التثبيت (`/opt/enterprise_CyberNexus`) |
 | 4 | إنشاء بيئة Python افتراضية (`venv`) |
 | 5 | تثبيت مكتبات Python من `requirements.txt` |
 | 6 | إنشاء ملفات الإعداد وشهادات TLS |
-| 7 | إنشاء خدمة `systemd` (`ngfw.service`) |
-| 8 | إنشاء أمر مختصر عالمي (`ngfw-start`) |
+| 7 | إنشاء خدمة `systemd` (`CyberNexus.service`) |
+| 8 | إنشاء أمر مختصر عالمي (`CyberNexus-start`) |
 
 ## الذكاء الاصطناعي (Gemini)
 
@@ -46,8 +46,8 @@ Gemini يرد بأوامر bash لحل المشكلة، ثم المثبّت ين
 | المتغير | الافتراضي | الوصف |
 |---------|-----------|-------|
 | `GEMINI_API_KEY` | - | مفتاح Gemini لحل الأخطاء |
-| `NGFW_HOME` | `/opt/enterprise_ngfw` | مجلد التثبيت |
-| `NGFW_ADMIN_PASSWORD` | `admin123` | **يجب تغييره** |
+| `CyberNexus_HOME` | `/opt/enterprise_CyberNexus` | مجلد التثبيت |
+| `CyberNexus_ADMIN_PASSWORD` | `admin123` | **يجب تغييره** |
 
 ## ما تم استبداله
 `scripts/install/install.sh` ← **إيقاف، استخدم `smart_install.py`**
@@ -56,16 +56,16 @@ Gemini يرد بأوامر bash لحل المشكلة، ثم المثبّت ين
 بعد التثبيت:
 ```bash
 # تشغيل النظام
-ngfw-start
+CyberNexus-start
 
 # أو عبر systemd
-systemctl start ngfw
-systemctl status ngfw
-systemctl enable ngfw   # للتشغيل التلقائي عند البدء
+systemctl start CyberNexus
+systemctl status CyberNexus
+systemctl enable CyberNexus   # للتشغيل التلقائي عند البدء
 ```
 
 ## تسجيل الأحداث
 ```bash
-journalctl -u ngfw -f          # سجل مباشر
-tail -f /var/log/ngfw/ngfw.log # سجل ملف
+journalctl -u CyberNexus -f          # سجل مباشر
+tail -f /var/log/CyberNexus/CyberNexus.log # سجل ملف
 ```

@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF Graph Neural Network Training Package
+Enterprise CyberNexus — WAF Graph Neural Network Training Package
 
 GNN-based session graph analysis for detecting:
   - Lateral movement

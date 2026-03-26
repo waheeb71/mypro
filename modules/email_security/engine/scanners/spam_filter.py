@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Email Spam Filter
+Enterprise CyberNexus — Email Spam Filter
 
 Scores emails for spam characteristics using heuristics:
   1. Spam keyword density (expanded English + Arabic)

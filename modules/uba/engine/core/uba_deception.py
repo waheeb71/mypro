@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - UBA Intelligent Honeytoken Engine (Patent PoC)
+Enterprise CyberNexus - UBA Intelligent Honeytoken Engine (Patent PoC)
 
 This module generates contextual baits (Honeytokens) when a user's behavior 
 exhibits high anomaly but hasn't reached an absolute blocking threshold.

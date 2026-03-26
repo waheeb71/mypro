@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - Prometheus Metrics Integration
+Enterprise CyberNexus - Prometheus Metrics Integration
 
 Provides /metrics endpoint for Prometheus monitoring with:
 - Request counts by verdict
@@ -25,101 +25,101 @@ import time
 # ==================== Metrics Definitions ====================
 
 # Events metrics
-ngfw_events_total = Counter(
-    'ngfw_events_total',
+CyberNexus_events_total = Counter(
+    'CyberNexus_events_total',
     'Total number of events processed',
     ['source_path', 'verdict']
 )
 
-ngfw_events_buffered = Gauge(
-    'ngfw_events_buffered',
+CyberNexus_events_buffered = Gauge(
+    'CyberNexus_events_buffered',
     'Number of events currently in buffer'
 )
 
-ngfw_events_flushed_total = Counter(
-    'ngfw_events_flushed_total',
+CyberNexus_events_flushed_total = Counter(
+    'CyberNexus_events_flushed_total',
     'Total number of events flushed to backends'
 )
 
 # Decision engine metrics
-ngfw_decisions_total = Counter(
-    'ngfw_decisions_total',
+CyberNexus_decisions_total = Counter(
+    'CyberNexus_decisions_total',
     'Total number of decisions made',
     ['action', 'source']
 )
 
-ngfw_rate_limited_total = Counter(
-    'ngfw_rate_limited_total',
+CyberNexus_rate_limited_total = Counter(
+    'CyberNexus_rate_limited_total',
     'Total number of rate limit actions'
 )
 
-ngfw_quarantined_total = Counter(
-    'ngfw_quarantined_total',
+CyberNexus_quarantined_total = Counter(
+    'CyberNexus_quarantined_total',
     'Total number of quarantine actions'
 )
 
 # TTL Manager metrics
-ngfw_ttl_entries_active = Gauge(
-    'ngfw_ttl_entries_active',
+CyberNexus_ttl_entries_active = Gauge(
+    'CyberNexus_ttl_entries_active',
     'Number of active TTL entries',
     ['action_type']
 )
 
-ngfw_ttl_expired_total = Counter(
-    'ngfw_ttl_expired_total',
+CyberNexus_ttl_expired_total = Counter(
+    'CyberNexus_ttl_expired_total',
     'Total number of expired TTL entries'
 )
 
 # XDP metrics
-ngfw_xdp_packets_total = Counter(
-    'ngfw_xdp_packets_total',
+CyberNexus_xdp_packets_total = Counter(
+    'CyberNexus_xdp_packets_total',
     'Total packets processed by XDP',
     ['verdict']
 )
 
-ngfw_xdp_bytes_total = Counter(
-    'ngfw_xdp_bytes_total',
+CyberNexus_xdp_bytes_total = Counter(
+    'CyberNexus_xdp_bytes_total',
     'Total bytes processed by XDP'
 )
 
 # ML metrics
-ngfw_ml_predictions_total = Counter(
-    'ngfw_ml_predictions_total',
+CyberNexus_ml_predictions_total = Counter(
+    'CyberNexus_ml_predictions_total',
     'Total ML predictions made',
     ['label']
 )
 
-ngfw_ml_confidence = Histogram(
-    'ngfw_ml_confidence',
+CyberNexus_ml_confidence = Histogram(
+    'CyberNexus_ml_confidence',
     'ML prediction confidence scores',
     buckets=[0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 1.0]
 )
 
 # Backend metrics
-ngfw_backend_writes_total = Counter(
-    'ngfw_backend_writes_total',
+CyberNexus_backend_writes_total = Counter(
+    'CyberNexus_backend_writes_total',
     'Total writes to backends',
     ['backend_type', 'status']
 )
 
-ngfw_backend_latency = Histogram(
-    'ngfw_backend_latency_seconds',
+CyberNexus_backend_latency = Histogram(
+    'CyberNexus_backend_latency_seconds',
     'Backend write latency',
     ['backend_type'],
     buckets=[0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]
 )
 
 # Component health
-ngfw_component_healthy = Gauge(
-    'ngfw_component_healthy',
+CyberNexus_component_healthy = Gauge(
+    'CyberNexus_component_healthy',
     'Component health status (1=healthy, 0=unhealthy)',
     ['component']
 )
 
 # System info
-ngfw_info = Info(
-    'ngfw',
-    'Enterprise NGFW system information'
+CyberNexus_info = Info(
+    'CyberNexus',
+    'Enterprise CyberNexus system information'
 )
 
 
@@ -139,7 +139,7 @@ def update_metrics_from_event_sink(event_sink):
         stats = event_sink.get_statistics()
         
         # Update buffer gauge
-        ngfw_events_buffered.set(stats.get('buffer_size', 0))
+        CyberNexus_events_buffered.set(stats.get('buffer_size', 0))
         
         # Update backend metrics
         for backend_stats in stats.get('backends', []):
@@ -147,14 +147,14 @@ def update_metrics_from_event_sink(event_sink):
             
             # Successful writes
             if 'events_written' in backend_stats:
-                ngfw_backend_writes_total.labels(
+                CyberNexus_backend_writes_total.labels(
                     backend_type=backend_type,
                     status='success'
                 ).inc(backend_stats['events_written'])
             
             # Failed writes  
             if 'events_failed' in backend_stats:
-                ngfw_backend_writes_total.labels(
+                CyberNexus_backend_writes_total.labels(
                     backend_type=backend_type,
                     status='failure'
                 ).inc(backend_stats['events_failed'])
@@ -190,7 +190,7 @@ def update_metrics_from_decision_engine(decision_engine):
         active_by_type = ttl_stats.get('active_by_type', {})
         
         for action_type, count in active_by_type.items():
-            ngfw_ttl_entries_active.labels(action_type=action_type).set(count)
+            CyberNexus_ttl_entries_active.labels(action_type=action_type).set(count)
             
     except Exception as e:
         print(f"Error updating decision engine metrics: {e}")
@@ -214,7 +214,7 @@ def update_component_health(health_checker):
         components = ['event_sink', 'decision_engine', 'xdp_engine', 'api']
         for component in components:
             # Would check actual health here
-            ngfw_component_healthy.labels(component=component).set(1)
+            CyberNexus_component_healthy.labels(component=component).set(1)
             
     except Exception as e:
         print(f"Error updating component health: {e}")
@@ -227,7 +227,7 @@ def set_system_info(version: str = "1.0.0"):
     Args:
         version: System version
     """
-    ngfw_info.info({
+    CyberNexus_info.info({
         'version': version,
         'mode': 'production',
         'features': 'xdp,ml,threat_intel'
@@ -256,7 +256,7 @@ async def metrics_endpoint():
 
 def record_event(source_path: str, verdict: str):
     """Record an event"""
-    ngfw_events_total.labels(
+    CyberNexus_events_total.labels(
         source_path=source_path,
         verdict=verdict
     ).inc()
@@ -264,12 +264,12 @@ def record_event(source_path: str, verdict: str):
 
 def record_event_flush(count: int):
     """Record events flushed"""
-    ngfw_events_flushed_total.inc(count)
+    CyberNexus_events_flushed_total.inc(count)
 
 
 def record_decision(action: str, source: str = 'policy'):
     """Record a decision"""
-    ngfw_decisions_total.labels(
+    CyberNexus_decisions_total.labels(
         action=action,
         source=source
     ).inc()
@@ -277,37 +277,37 @@ def record_decision(action: str, source: str = 'policy'):
 
 def record_rate_limit():
     """Record rate limit action"""
-    ngfw_rate_limited_total.inc()
+    CyberNexus_rate_limited_total.inc()
 
 
 def record_quarantine():
     """Record quarantine action"""
-    ngfw_quarantined_total.inc()
+    CyberNexus_quarantined_total.inc()
 
 
 def record_xdp_packet(verdict: str, bytes: int = 0):
     """Record XDP packet"""
-    ngfw_xdp_packets_total.labels(verdict=verdict).inc()
+    CyberNexus_xdp_packets_total.labels(verdict=verdict).inc()
     if bytes > 0:
-        ngfw_xdp_bytes_total.inc(bytes)
+        CyberNexus_xdp_bytes_total.inc(bytes)
 
 
 def record_ml_prediction(label: str, confidence: float):
     """Record ML prediction"""
-    ngfw_ml_predictions_total.labels(label=label).inc()
-    ngfw_ml_confidence.observe(confidence)
+    CyberNexus_ml_predictions_total.labels(label=label).inc()
+    CyberNexus_ml_confidence.observe(confidence)
 
 
 def record_backend_write(backend_type: str, latency: float, success: bool = True):
     """Record backend write"""
     status = 'success' if success else 'failure'
-    ngfw_backend_writes_total.labels(
+    CyberNexus_backend_writes_total.labels(
         backend_type=backend_type,
         status=status
     ).inc()
     
     if success:
-        ngfw_backend_latency.labels(backend_type=backend_type).observe(latency)
+        CyberNexus_backend_latency.labels(backend_type=backend_type).observe(latency)
 
 
 # Initialize system info

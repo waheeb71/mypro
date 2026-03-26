@@ -22,8 +22,8 @@
 ### 4.1.3 آلية العمل
 يعتمد الموديول على آلية فحص متعددة المستويات (Pipeline):
 1. **Pre-filtering:** مقارنة النطاق المطلوب بقواعد قاعدة البيانات (SQLAlchemy) لدعم القرارات السريعة (Allow/Block).
-2. **Heuristic Analysis:** استخدام نموذج [DGADetector](file:///F:/enterprise_ngfw/modules/dns_security/engine/dga_detector.py#7-34) لحساب "إنتروبيا شانون" (Shannon Entropy)؛ فإذا كان النطاق عشوائياً بشكل مريب يتم تصنيفه كـ DGA.
-3. **Behavioral Analysis:** يقوم [DNSTunnelingDetector](file:///F:/enterprise_ngfw/modules/dns_security/engine/tunneling_detector.py#5-35) بمراقبة طول النطاقات، أنواع الاستعلامات (مثل TXT/NULL)، وتكرار الطلبات من نفس المصدر لكشف الأنفاق المخفية.
+2. **Heuristic Analysis:** استخدام نموذج [DGADetector](file:///F:/enterprise_CyberNexus/modules/dns_security/engine/dga_detector.py#7-34) لحساب "إنتروبيا شانون" (Shannon Entropy)؛ فإذا كان النطاق عشوائياً بشكل مريب يتم تصنيفه كـ DGA.
+3. **Behavioral Analysis:** يقوم [DNSTunnelingDetector](file:///F:/enterprise_CyberNexus/modules/dns_security/engine/tunneling_detector.py#5-35) بمراقبة طول النطاقات، أنواع الاستعلامات (مثل TXT/NULL)، وتكرار الطلبات من نفس المصدر لكشف الأنفاق المخفية.
 4. **Threat Intel:** فحص النطاقات ضد قائمة محلية من الـ IOCs (Indicators of Compromise) المعروفة.
 
 ---

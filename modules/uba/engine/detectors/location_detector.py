@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — UBA Location / IP Anomaly Detector
+Enterprise CyberNexus — UBA Location / IP Anomaly Detector
 
 Detects access from an unknown source IP compared to the user's known-IP list.
 Escalates score if the IP subnet (first 2 octets) has also never been seen.

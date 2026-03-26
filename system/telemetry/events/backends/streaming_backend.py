@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - Streaming Backend
+Enterprise CyberNexus - Streaming Backend
 ═══════════════════════════════════════════════════════════════════
 
 Streaming backend for real-time event processing.
@@ -60,7 +60,7 @@ class StreamingBackend(EventBackend):
         
         self.stream_type = config.get('stream_type', 'kafka').lower()
         self.connection_string = config.get('connection_string', 'localhost:9092')
-        self.topic = config.get('topic', 'ngfw-events')
+        self.topic = config.get('topic', 'CyberNexus-events')
         
         self._producer = None
         self._redis = None

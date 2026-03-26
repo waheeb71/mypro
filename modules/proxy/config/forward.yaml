@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════
-# Enterprise NGFW - Forward Proxy Configuration
+# Enterprise CyberNexus - Forward Proxy Configuration
 # ═══════════════════════════════════════════════════════════════════
 
 # Proxy Configuration
@@ -20,16 +20,16 @@ proxy:
 # SSL/TLS Configuration
 tls:
   # CA certificates
-  ca_cert_path: "/etc/ngfw/certs/root-ca.crt"
-  ca_key_path: "/etc/ngfw/certs/root-ca.key"
+  ca_cert_path: "/etc/CyberNexus/certs/root-ca.crt"
+  ca_key_path: "/etc/CyberNexus/certs/root-ca.key"
   
   # Intermediate CA
   use_intermediate_ca: true
-  intermediate_ca_cert: "/etc/ngfw/certs/intermediate-ca.crt"
-  intermediate_ca_key: "/etc/ngfw/certs/intermediate-ca.key"
+  intermediate_ca_cert: "/etc/CyberNexus/certs/intermediate-ca.crt"
+  intermediate_ca_key: "/etc/CyberNexus/certs/intermediate-ca.key"
   
   # Certificate generation settings
-  cert_cache_dir: "/var/cache/ngfw/certs"
+  cert_cache_dir: "/var/cache/CyberNexus/certs"
   cert_cache_size: 10000
   cert_validity_days: 365
   cert_key_size: 2048
@@ -106,13 +106,13 @@ security:
 # Logging Configuration
 logging:
   level: "INFO"
-  file: "/var/log/ngfw/ngfw.log"
+  file: "/var/log/CyberNexus/CyberNexus.log"
   max_bytes: 104857600
   backup_count: 10
   flow_log_enabled: true
-  flow_log_file: "/var/log/ngfw/flows.log"
+  flow_log_file: "/var/log/CyberNexus/flows.log"
   security_log_enabled: true
-  security_log_file: "/var/log/ngfw/security.log"
+  security_log_file: "/var/log/CyberNexus/security.log"
 
 # Monitoring Configuration
 monitoring:

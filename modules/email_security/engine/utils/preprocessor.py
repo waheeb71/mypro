@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Email Preprocessor
+Enterprise CyberNexus — Email Preprocessor
 
 Parses MIME email messages and extracts:
   - Plain text body (from text/plain or stripped HTML)

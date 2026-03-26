@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Email Security REST API
+Enterprise CyberNexus — Email Security REST API
 ==========================================
 Prefix: /api/v1/email_security
 
@@ -58,13 +58,13 @@ class WhitelistEntry(BaseModel):
 
 
 def _get_db(request: Request):
-    """Return the database manager from the NGFW app state."""
-    ngfw = getattr(request.app.state, "ngfw_app", None)
-    if ngfw and hasattr(ngfw, "db"):
-        return ngfw.db
+    """Return the database manager from the CyberNexus app state."""
+    CyberNexus = getattr(request.app.state, "CyberNexus_app", None)
+    if CyberNexus and hasattr(CyberNexus, "db"):
+        return CyberNexus.db
     raise HTTPException(
         status_code=503,
-        detail="Database not available — NGFW not fully initialized",
+        detail="Database not available — CyberNexus not fully initialized",
     )
 
 
@@ -102,11 +102,11 @@ def _config_to_dict(cfg) -> Dict[str, Any]:
 def _apply_config_to_settings(request: Request, db_dict: Dict[str, Any]):
     """Push updated config into the live EmailInspectorPlugin if running."""
     try:
-        ngfw = getattr(request.app.state, "ngfw_app", None)
-        if ngfw is None:
+        CyberNexus = getattr(request.app.state, "CyberNexus_app", None)
+        if CyberNexus is None:
             return
         from modules.email_security.engine.core.email_inspector import EmailInspectorPlugin
-        pipeline = getattr(ngfw, "inspection_pipeline", None)
+        pipeline = getattr(CyberNexus, "inspection_pipeline", None)
         if pipeline is None:
             return
         plugin = pipeline.get_plugin("email_ai_inspector")
@@ -127,10 +127,10 @@ def _apply_config_to_settings(request: Request, db_dict: Dict[str, Any]):
 async def get_status(request: Request, token: dict = Depends(require_email)):
     """Return live email security module status and counters."""
     try:
-        ngfw = getattr(request.app.state, "ngfw_app", None)
+        CyberNexus = getattr(request.app.state, "CyberNexus_app", None)
         plugin_stats = {}
-        if ngfw:
-            pipeline = getattr(ngfw, "inspection_pipeline", None)
+        if CyberNexus:
+            pipeline = getattr(CyberNexus, "inspection_pipeline", None)
             if pipeline:
                 from modules.email_security.engine.core.email_inspector import EmailInspectorPlugin
                 plugin = pipeline.get_plugin("email_ai_inspector")

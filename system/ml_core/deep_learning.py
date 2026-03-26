@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enterprise NGFW - Deep Learning Module
+Enterprise CyberNexus - Deep Learning Module
 
 Neural network models for traffic analysis:
 - DeepTrafficClassifier: CNN/LSTM for traffic pattern classification

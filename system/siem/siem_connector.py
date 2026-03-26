@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enterprise NGFW - SIEM Integration
+Enterprise CyberNexus - SIEM Integration
 
 Connectors for sending security events to SIEM systems:
 - Syslog (RFC 5424) over UDP/TCP/TLS
@@ -47,8 +47,8 @@ class SIEMEvent:
         sev = severity_map.get(self.severity, 6)
         pri = facility * 8 + sev
         return (
-            f"<{pri}>1 {self.timestamp} ngfw - - - - "
-            f"[ngfw action=\"{self.action}\" src=\"{self.source_ip}:{self.source_port}\" "
+            f"<{pri}>1 {self.timestamp} CyberNexus - - - - "
+            f"[CyberNexus action=\"{self.action}\" src=\"{self.source_ip}:{self.source_port}\" "
             f"dst=\"{self.destination_ip}:{self.destination_port}\" "
             f"proto=\"{self.protocol}\"] {self.description}"
         )
@@ -71,7 +71,7 @@ class SIEMEvent:
         """Convert to Splunk HEC format"""
         return {
             'time': self.timestamp,
-            'sourcetype': 'ngfw:security',
+            'sourcetype': 'CyberNexus:security',
             'event': {
                 'severity': self.severity,
                 'event_type': self.event_type,
@@ -193,7 +193,7 @@ class ElasticConnector(SIEMConnector):
     def __init__(self, config: dict):
         super().__init__(config)
         self.hosts = config.get('hosts', ['http://localhost:9200'])
-        self.index_prefix = config.get('index_prefix', 'ngfw-events')
+        self.index_prefix = config.get('index_prefix', 'CyberNexus-events')
         self.api_key = config.get('api_key', '')
         logger.info(f"ElasticConnector → {self.hosts}")
 

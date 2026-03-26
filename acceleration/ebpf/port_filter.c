@@ -1,5 +1,5 @@
 /*
- * Enterprise NGFW v2.0 - eBPF XDP Port Filter
+ * Enterprise CyberNexus v2.0 - eBPF XDP Port Filter
  * 
  * High-performance port filtering at kernel level using XDP.
  * Provides both whitelist and blacklist modes with per-port statistics.
@@ -11,7 +11,7 @@
  * - Zero-copy packet processing
  * - 10Gbps+ throughput
  * 
- * Author: Enterprise NGFW Team
+ * Author: Enterprise CyberNexus Team
  * License: Proprietary
  */
 

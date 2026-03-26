@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — UBA Risk Score Aggregator
+Enterprise CyberNexus — UBA Risk Score Aggregator
 
 Collects detector scores, applies configurable weights, maps the result
 to a risk tier, and updates the user profile's running risk score using

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enterprise NGFW - Reinforcement Learning Policy Optimizer
+Enterprise CyberNexus - Reinforcement Learning Policy Optimizer
 
 DQN-based adaptive policy optimization:
 - State: traffic features + current policy parameters

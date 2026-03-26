@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════
-# Enterprise NGFW - Transparent Proxy Configuration
+# Enterprise CyberNexus - Transparent Proxy Configuration
 # ═══════════════════════════════════════════════════════════════════
 
 # Proxy Configuration
@@ -19,12 +19,12 @@ proxy:
 
 # SSL/TLS Configuration
 tls:
-  ca_cert_path: "/etc/ngfw/certs/root-ca.crt"
-  ca_key_path: "/etc/ngfw/certs/root-ca.key"
+  ca_cert_path: "/etc/CyberNexus/certs/root-ca.crt"
+  ca_key_path: "/etc/CyberNexus/certs/root-ca.key"
   use_intermediate_ca: true
-  intermediate_ca_cert: "/etc/ngfw/certs/intermediate-ca.crt"
-  intermediate_ca_key: "/etc/ngfw/certs/intermediate-ca.key"
-  cert_cache_dir: "/var/cache/ngfw/certs"
+  intermediate_ca_cert: "/etc/CyberNexus/certs/intermediate-ca.crt"
+  intermediate_ca_key: "/etc/CyberNexus/certs/intermediate-ca.key"
+  cert_cache_dir: "/var/cache/CyberNexus/certs"
   cert_cache_size: 10000
   min_tls_version: "TLSv1.2"
   max_tls_version: "TLSv1.3"
@@ -74,6 +74,6 @@ security:
 # Logging Configuration
 logging:
   level: "INFO"
-  file: "/var/log/ngfw/ngfw.log"
+  file: "/var/log/CyberNexus/CyberNexus.log"
   flow_log_enabled: true
   security_log_enabled: true

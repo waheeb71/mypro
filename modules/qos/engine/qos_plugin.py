@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — QoS Inspector Plugin
+Enterprise CyberNexus — QoS Inspector Plugin
 
 Lightweight InspectorPlugin that integrates the QoSManager into the
 inspection pipeline. Runs at LOWEST priority (after all security checks)

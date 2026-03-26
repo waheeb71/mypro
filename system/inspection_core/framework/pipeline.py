@@ -1,9 +1,9 @@
 """
-Enterprise NGFW v2.0 - Inspection Pipeline
+Enterprise CyberNexus v2.0 - Inspection Pipeline
 
 Main inspection pipeline that orchestrates all plugins.
 
-Author: Enterprise NGFW Team
+Author: Enterprise CyberNexus Team
 License: Proprietary
 """
 

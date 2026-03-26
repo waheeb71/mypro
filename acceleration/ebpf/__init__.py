@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - eBPF Acceleration Package
+Enterprise CyberNexus v2.0 - eBPF Acceleration Package
 
 High-performance packet processing using eBPF XDP technology.
 """

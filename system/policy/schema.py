@@ -1,5 +1,5 @@
 """
-Enterprise NGFW Policy Schema
+Enterprise CyberNexus Policy Schema
 Data models for policy rules and definitions.
 """
 

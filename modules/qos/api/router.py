@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — QoS REST API
+Enterprise CyberNexus — QoS REST API
 ================================
 Prefix: /api/v1/qos
 
@@ -65,9 +65,9 @@ def _cfg_to_dict(cfg: DBConfig) -> dict:
 
 
 def _get_qos_manager(request: Request):
-    ngfw = getattr(request.app.state, 'ngfw_app', None)
-    if ngfw and hasattr(ngfw, 'qos_manager'):
-        return ngfw.qos_manager
+    CyberNexus = getattr(request.app.state, 'CyberNexus_app', None)
+    if CyberNexus and hasattr(CyberNexus, 'qos_manager'):
+        return CyberNexus.qos_manager
     return None
 
 

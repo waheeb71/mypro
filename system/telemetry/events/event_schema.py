@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - Event Schema
+Enterprise CyberNexus - Event Schema
 ═══════════════════════════════════════════════════════════════════
 
 Unified event schema for all traffic paths (XDP + Normal mode).
@@ -80,7 +80,7 @@ class EventMetadata:
 @dataclass
 class EventSchema:
     """
-    Unified Event Schema for Enterprise NGFW
+    Unified Event Schema for Enterprise CyberNexus
     
     This schema is used by all traffic paths (XDP and Normal mode)
     to ensure consistent event logging and processing.

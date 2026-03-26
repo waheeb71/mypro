@@ -11,51 +11,51 @@ const NAV_GROUPS = [
   {
     label: 'Overview',
     items: [
-      { to: '/',              icon: LayoutDashboard, label: 'Dashboard' },
+      { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     ]
   },
   {
     label: 'Threat Management',
     items: [
-      { to: '/firewall',      icon: Shield,           label: 'Firewall Rules' },
-      { to: '/ip-blocklist',  icon: ShieldOff,        label: 'IP Blocklist' },
-      { to: '/waf',           icon: Globe,            label: 'WAF' },
-      { to: '/ids-ips',       icon: Activity,         label: 'IDS / IPS' },
-      { to: '/malware',       icon: Bug,              label: 'Malware / AV' },
+      { to: '/firewall', icon: Shield, label: 'Firewall Rules' },
+      { to: '/ip-blocklist', icon: ShieldOff, label: 'IP Blocklist' },
+      { to: '/waf', icon: Globe, label: 'WAF' },
+      { to: '/ids-ips', icon: Activity, label: 'IDS / IPS' },
+      { to: '/malware', icon: Bug, label: 'Malware / AV' },
     ]
   },
   {
     label: 'Network Services',
     items: [
-      { to: '/dns',           icon: Network,          label: 'DNS Security' },
-      { to: '/vpn',           icon: Lock,             label: 'VPN' },
-      { to: '/proxy',         icon: Server,           label: 'Forward Proxy' },
-      { to: '/email',         icon: Mail,             label: 'Email Security' },
-      { to: '/web-filter',    icon: Globe,            label: 'Web Filter' },
-      { to: '/qos',           icon: Gauge,            label: 'QoS / Shaping' },
+      { to: '/dns', icon: Network, label: 'DNS Security' },
+      { to: '/vpn', icon: Lock, label: 'VPN' },
+      { to: '/proxy', icon: Server, label: 'Forward Proxy' },
+      { to: '/email', icon: Mail, label: 'Email Security' },
+      { to: '/web-filter', icon: Globe, label: 'Web Filter' },
+      { to: '/qos', icon: Gauge, label: 'QoS / Shaping' },
     ]
   },
   {
     label: 'Inspection',
     items: [
-      { to: '/http',          icon: Search,           label: 'HTTP Inspect' },
-      { to: '/ssl',           icon: Wifi,             label: 'SSL Inspect' },
-      { to: '/dlp',           icon: FileText,         label: 'DLP' },
+      { to: '/http', icon: Search, label: 'HTTP Inspect' },
+      { to: '/ssl', icon: Wifi, label: 'SSL Inspect' },
+      { to: '/dlp', icon: FileText, label: 'DLP' },
     ]
   },
   {
     label: 'Intelligence',
     items: [
-      { to: '/ai',            icon: Zap,              label: 'Predictive AI' },
-      { to: '/uba',           icon: UserCheck,        label: 'User Behavior' },
+      { to: '/ai', icon: Zap, label: 'Predictive AI' },
+      { to: '/uba', icon: UserCheck, label: 'User Behavior' },
     ]
   },
   {
     label: 'Administration',
     items: [
-      { to: '/system',        icon: Settings,         label: 'System' },
-      { to: '/settings',      icon: Database,         label: 'Raw Configs' },
-      { to: '/users',         icon: User,             label: 'Users & RBAC' },
+      { to: '/system', icon: Settings, label: 'System' },
+      { to: '/settings', icon: Database, label: 'Raw Configs' },
+      { to: '/users', icon: User, label: 'Users & RBAC' },
     ]
   }
 ];
@@ -71,7 +71,7 @@ export default function Shell() {
           <div className="sidebar-logo-icon">
             <Shield size={18} color="#fff" />
           </div>
-          <span className="sidebar-logo-text">NGFW Console</span>
+          <span className="sidebar-logo-text">CyberNexus Console</span>
         </NavLink>
 
         <nav className="sidebar-nav">
@@ -103,7 +103,7 @@ export default function Shell() {
 
       {/* ── Top Bar ── */}
       <header className="topbar">
-        <div className="topbar-title">Enterprise NGFW</div>
+        <div className="topbar-title">Enterprise CyberNexus</div>
         <div className="topbar-right">
           <div className="topbar-live">
             <div className="topbar-live-dot pulse" />

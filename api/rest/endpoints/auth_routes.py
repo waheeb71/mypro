@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Authentication Endpoints
+Enterprise CyberNexus - Authentication Endpoints
 POST   /api/v1/auth/login   — Login and get JWT token
 POST   /api/v1/auth/refresh — Refresh token
 """
@@ -64,6 +64,6 @@ async def get_current_user(token_data: dict = Depends(verify_token)):
 
 
 def _get_db(request: Request):
-    if not hasattr(request.app.state, "ngfw") or not request.app.state.ngfw:
-        raise HTTPException(status_code=503, detail="NGFW not initialized")
-    return request.app.state.ngfw.db
+    if not hasattr(request.app.state, "CyberNexus") or not request.app.state.CyberNexus:
+        raise HTTPException(status_code=503, detail="CyberNexus not initialized")
+    return request.app.state.CyberNexus.db

@@ -7,23 +7,23 @@ import { authApi } from '../services/api';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser]   = useState(() => {
-    const raw = localStorage.getItem('ngfw_user');
+  const [user, setUser] = useState(() => {
+    const raw = localStorage.getItem('CyberNexus_user');
     return raw ? JSON.parse(raw) : null;
   });
 
   const login = useCallback(async (username, password) => {
     const { data } = await authApi.login({ username, password });
-    localStorage.setItem('ngfw_token', data.access_token);
+    localStorage.setItem('CyberNexus_token', data.access_token);
     const me = { username, role: data.role };
-    localStorage.setItem('ngfw_user', JSON.stringify(me));
+    localStorage.setItem('CyberNexus_user', JSON.stringify(me));
     setUser(me);
     return data;
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('ngfw_token');
-    localStorage.removeItem('ngfw_user');
+    localStorage.removeItem('CyberNexus_token');
+    localStorage.removeItem('CyberNexus_user');
     setUser(null);
   }, []);
 

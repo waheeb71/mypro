@@ -19,7 +19,7 @@
 ### أوامر تشغيل التدريب:
 لإعادة بناء واختبار وتدريب نموذج استكشاف البوتات:
 ```bash
-cd M:\نسخ المشروع\enterprise_ngfw
+cd M:\نسخ المشروع\enterprise_CyberNexus
 python -m modules.waf.ml_training.bot_detection.train
 ```
 

@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — UBA Peer Group Comparator
+Enterprise CyberNexus — UBA Peer Group Comparator
 
 Compares a user's current behavior to the average of their peer group
 (users sharing the same role / department).

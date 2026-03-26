@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - eBPF XDP Engine
+Enterprise CyberNexus - eBPF XDP Engine
 ═══════════════════════════════════════════════════════════════════
 
 Manages eBPF XDP/TC programs for high-speed packet filtering at

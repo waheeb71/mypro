@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF Graph Neural Network Model
+Enterprise CyberNexus — WAF Graph Neural Network Model
 
 Uses Graph Attention Network (GAT) to analyze session navigation graphs
 and detect multi-step attack patterns that signature-based systems miss.

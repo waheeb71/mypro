@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - Unit Tests for REST API
+Enterprise CyberNexus - Unit Tests for REST API
 
 Tests for:
 - Authentication (login, JWT tokens)
@@ -24,14 +24,14 @@ def setup_test_db():
     db.initialize()
     db.add_default_users(_hash_password("admin123"), _hash_password("operator123"))
     
-    class MockNGFW:
+    class MockCyberNexus:
         def __init__(self):
             self.db = db
             self.ha_manager = None
             self.health_checker = MagicMock()
             
-    app.state.ngfw = MockNGFW()
-    app.state.ngfw_app = app.state.ngfw
+    app.state.CyberNexus = MockCyberNexus()
+    app.state.CyberNexus_app = app.state.CyberNexus
     
     yield
     db.close()

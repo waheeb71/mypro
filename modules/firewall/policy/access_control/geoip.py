@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - GeoIP Filter
+Enterprise CyberNexus v2.0 - GeoIP Filter
 Country-based traffic filtering using MaxMind GeoIP2 database.
 """
 

@@ -135,7 +135,7 @@ app.include_router(my_router)
 
 ## تشغيل API للتطوير
 ```bash
-cd /opt/enterprise_ngfw
+cd /opt/enterprise_CyberNexus
 python -m api.rest.main
 
 # أو مع uvicorn

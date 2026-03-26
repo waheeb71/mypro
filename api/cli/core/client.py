@@ -3,11 +3,11 @@ import yaml
 from pathlib import Path
 from typing import Optional
 
-CONFIG_FILE = Path.home() / ".ngfw" / "config.yaml"
+CONFIG_FILE = Path.home() / ".CyberNexus" / "config.yaml"
 DEFAULT_API_URL = "http://localhost:8000/api/v1"
 
-class NGFWClient:
-    """NGFW API client"""
+class CyberNexusClient:
+    """CyberNexus API client"""
     
     def __init__(self, api_url: str, token: Optional[str] = None):
         self.api_url = api_url.rstrip('/')
@@ -60,8 +60,8 @@ def save_config(config: dict):
     with open(CONFIG_FILE, 'w') as f:
         yaml.dump(config, f)
 
-def get_client() -> NGFWClient:
+def get_client() -> CyberNexusClient:
     config = load_config()
     api_url = config.get('api_url', DEFAULT_API_URL)
     token = config.get('token')
-    return NGFWClient(api_url, token)
+    return CyberNexusClient(api_url, token)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enterprise NGFW - Adaptive Policy Engine
+Enterprise CyberNexus - Adaptive Policy Engine
 ML-driven dynamic policy adjustment and optimization
 """
 

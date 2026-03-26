@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Email Phishing NLP Training (Enron + Synthetic Spam)
+Enterprise CyberNexus — Email Phishing NLP Training (Enron + Synthetic Spam)
 
 Trains a 1D-CNN + BiLSTM model on email body text to detect phishing/spam.
 
@@ -24,7 +24,7 @@ from typing import List, Tuple
 try:
     from modules.waf.ml_training.waf_nlp.model import WAFNLPModel
 except ImportError:
-    print("Error: Could not import WAFNLPModel. Ensure Enterprise NGFW is in PYTHONPATH.")
+    print("Error: Could not import WAFNLPModel. Ensure Enterprise CyberNexus is in PYTHONPATH.")
     exit(1)
 
 _DIR  = os.path.dirname(os.path.abspath(__file__))

@@ -1,4 +1,4 @@
-# Enterprise NGFW - Deployment Guide
+# Enterprise CyberNexus - Deployment Guide
 
 ## 📋 Prerequisites
 
@@ -45,8 +45,8 @@ which bpftool
 
 ```bash
 cd /opt
-sudo git clone <repository-url> enterprise_ngfw
-cd enterprise_ngfw
+sudo git clone <repository-url> enterprise_CyberNexus
+cd enterprise_CyberNexus
 sudo chown -R $(whoami):$(whoami) .
 ```
 
@@ -149,7 +149,7 @@ event_sink:
   batch_size: 100
   backends:
     - type: file
-      output_dir: /var/log/ngfw
+      output_dir: /var/log/CyberNexus
       format: json
       rotation: daily
 ```
@@ -158,33 +158,33 @@ event_sink:
 
 ```bash
 # Generate CA certificate
-mkdir -p /etc/ngfw/certs
+mkdir -p /etc/CyberNexus/certs
 openssl req -x509 -newkey rsa:4096 \
-  -keyout /etc/ngfw/certs/ca-key.pem \
-  -out /etc/ngfw/certs/ca-cert.pem \
+  -keyout /etc/CyberNexus/certs/ca-key.pem \
+  -out /etc/CyberNexus/certs/ca-cert.pem \
   -days 3650 -nodes \
-  -subj "/CN=Enterprise NGFW CA"
+  -subj "/CN=Enterprise CyberNexus CA"
 
 # Set permissions
-sudo chmod 600 /etc/ngfw/certs/ca-key.pem
-sudo chmod 644 /etc/ngfw/certs/ca-cert.pem
+sudo chmod 600 /etc/CyberNexus/certs/ca-key.pem
+sudo chmod 644 /etc/CyberNexus/certs/ca-cert.pem
 ```
 
 ### 4. Environment Variables
 
 ```bash
 # Create .env file
-cat > /opt/enterprise_ngfw/.env << 'EOF'
-NGFW_CONFIG=/opt/enterprise_ngfw/config/config.yaml
-NGFW_SECRET_KEY=your-secret-key-here-min-32-chars
-NGFW_ADMIN_PASSWORD=admin-password-here
-NGFW_OPERATOR_PASSWORD=operator-password-here
-NGFW_ALLOWED_ORIGINS=http://localhost:3000,https://dashboard.company.com
-NGFW_ENV=production
+cat > /opt/enterprise_CyberNexus/.env << 'EOF'
+CyberNexus_CONFIG=/opt/enterprise_CyberNexus/config/config.yaml
+CyberNexus_SECRET_KEY=your-secret-key-here-min-32-chars
+CyberNexus_ADMIN_PASSWORD=admin-password-here
+CyberNexus_OPERATOR_PASSWORD=operator-password-here
+CyberNexus_ALLOWED_ORIGINS=http://localhost:3000,https://dashboard.company.com
+CyberNexus_ENV=production
 EOF
 
 # Set permissions
-chmod 600 /opt/enterprise_ngfw/.env
+chmod 600 /opt/enterprise_CyberNexus/.env
 ```
 
 ---
@@ -194,7 +194,7 @@ chmod 600 /opt/enterprise_ngfw/.env
 ### Development Mode
 
 ```bash
-cd /opt/enterprise_ngfw
+cd /opt/enterprise_CyberNexus
 source venv/bin/activate
 
 # Run directly
@@ -209,8 +209,8 @@ python main.py -c config/config.yaml --log-level debug
 #### 1. Create Systemd Service
 
 ```bash
-sudo cp systemd/ngfw.service /etc/systemd/system/
-sudo nano /etc/systemd/system/ngfw.service
+sudo cp systemd/CyberNexus.service /etc/systemd/system/
+sudo nano /etc/systemd/system/CyberNexus.service
 ```
 
 **Verify paths in service file**:
@@ -222,17 +222,17 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/enterprise_ngfw
-Environment="PATH=/opt/enterprise_ngfw/venv/bin"
-EnvironmentFile=/opt/enterprise_ngfw/.env
-ExecStart=/opt/enterprise_ngfw/venv/bin/python3 main.py -c /opt/enterprise_ngfw/config/config.yaml
+WorkingDirectory=/opt/enterprise_CyberNexus
+Environment="PATH=/opt/enterprise_CyberNexus/venv/bin"
+EnvironmentFile=/opt/enterprise_CyberNexus/.env
+ExecStart=/opt/enterprise_CyberNexus/venv/bin/python3 main.py -c /opt/enterprise_CyberNexus/config/config.yaml
 Restart=on-failure
 RestartSec=10
 
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=ngfw
+SyslogIdentifier=CyberNexus
 
 # Security  CAP_NET_ADMIN
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
@@ -253,16 +253,16 @@ WantedBy=multi-user.target
 sudo systemctl daemon-reload
 
 # Enable service (start on boot)
-sudo systemctl enable ngfw
+sudo systemctl enable CyberNexus
 
 # Start service
-sudo systemctl start ngfw
+sudo systemctl start CyberNexus
 
 # Check status
-sudo systemctl status ngfw
+sudo systemctl status CyberNexus
 
 # View logs
-sudo journalctl -u ngfw -f
+sudo journalctl -u CyberNexus -f
 ```
 
 ---
@@ -343,7 +343,7 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'ngfw'
+  - job_name: 'CyberNexus'
     static_configs:
       - targets: ['localhost:8080']
     metrics_path: '/metrics'
@@ -376,7 +376,7 @@ echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a /etc/sysctl.conf
 #### 2. Configure iptables
 
 ```bash
-# Redirect HTTP/HTTPS to NGFW
+# Redirect HTTP/HTTPS to CyberNexus
 sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8080
 sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 443 -j REDIRECT --to-port 8080
 
@@ -386,7 +386,7 @@ sudo iptables-save | sudo tee /etc/iptables/rules.v4
 
 #### 3. Set as Default Gateway
 
-Configure client machines to use NGFW server as default gateway.
+Configure client machines to use CyberNexus server as default gateway.
 
 ---
 
@@ -396,24 +396,24 @@ Configure client machines to use NGFW server as default gateway.
 
 ```bash
 # Configuration files
-sudo chmod 600 /opt/enterprise_ngfw/config/config.yaml
-sudo chmod 600 /opt/enterprise_ngfw/.env
+sudo chmod 600 /opt/enterprise_CyberNexus/config/config.yaml
+sudo chmod 600 /opt/enterprise_CyberNexus/.env
 
 # Certificates
-sudo chmod 600 /etc/ngfw/certs/ca-key.pem
-sudo chmod 644 /etc/ngfw/certs/ca-cert.pem
+sudo chmod 600 /etc/CyberNexus/certs/ca-key.pem
+sudo chmod 644 /etc/CyberNexus/certs/ca-cert.pem
 
 # Log directory
-sudo mkdir -p /var/log/ngfw
-sudo chmod 750 /var/log/ngfw
-sudo chown ngfw:ngfw /var/log/ngfw  # If running as non-root
+sudo mkdir -p /var/log/CyberNexus
+sudo chmod 750 /var/log/CyberNexus
+sudo chown CyberNexus:CyberNexus /var/log/CyberNexus  # If running as non-root
 ```
 
 ### 2. Firewall Rules
 
 ```bash
 # Allow only necessary ports
-sudo ufw allow 8080/tcp  # NGFW API
+sudo ufw allow 8080/tcp  # CyberNexus API
 sudo ufw allow 22/tcp    # SSH (management)
 sudo ufw enable
 ```
@@ -422,9 +422,9 @@ sudo ufw enable
 
 ```bash
 # Update .env file with strong passwords
-NGFW_SECRET_KEY=$(openssl rand -hex 32)
-NGFW_ADMIN_PASSWORD=$(openssl rand -base64 24)
-NGFW_OPERATOR_PASSWORD=$(openssl rand -base64 24)
+CyberNexus_SECRET_KEY=$(openssl rand -hex 32)
+CyberNexus_ADMIN_PASSWORD=$(openssl rand -base64 24)
+CyberNexus_OPERATOR_PASSWORD=$(openssl rand -base64 24)
 ```
 
 ---
@@ -435,33 +435,33 @@ NGFW_OPERATOR_PASSWORD=$(openssl rand -base64 24)
 
 ```bash
 # View systemd logs
-sudo journalctl -u ngfw -n 100 --no-pager
+sudo journalctl -u CyberNexus -n 100 --no-pager
 
 # Follow logs in real-time
-sudo journalctl -u ngfw -f
+sudo journalctl -u CyberNexus -f
 
 # Application logs (if file backend configured)
-tail -f /var/log/ngfw/events_*.json
+tail -f /var/log/CyberNexus/events_*.json
 ```
 
 ### Backups
 
 ```bash
 # Backup configuration
-sudo cp -r /opt/enterprise_ngfw/config /backup/ngfw-config-$(date +%Y%m%d)
+sudo cp -r /opt/enterprise_CyberNexus/config /backup/CyberNexus-config-$(date +%Y%m%d)
 
 # Backup certificates
-sudo cp -r /etc/ngfw/certs /backup/ngfw-certs-$(date +%Y%m%d)
+sudo cp -r /etc/CyberNexus/certs /backup/CyberNexus-certs-$(date +%Y%m%d)
 
 # Backup database (if using SQLite)
-sudo cp /var/lib/ngfw/ngfw.db /backup/ngfw-db-$(date +%Y%m%d).db
+sudo cp /var/lib/CyberNexus/CyberNexus.db /backup/CyberNexus-db-$(date +%Y%m%d).db
 ```
 
 ### Updates
 
 ```bash
 # Pull latest code
-cd /opt/enterprise_ngfw
+cd /opt/enterprise_CyberNexus
 git pull
 
 # Update dependencies
@@ -469,7 +469,7 @@ source venv/bin/activate
 pip install --upgrade -r requirements/production.txt
 
 # Restart service
-sudo systemctl restart ngfw
+sudo systemctl restart CyberNexus
 ```
 
 ---
@@ -479,21 +479,21 @@ sudo systemctl restart ngfw
 ### Build Image
 
 ```bash
-docker build -t enterprise-ngfw:latest .
+docker build -t enterprise-CyberNexus:latest .
 ```
 
 ### Run Container
 
 ```bash
 docker run -d \
-  --name ngfw \
+  --name CyberNexus \
   --network host \
   --cap-add NET_ADMIN \
   --cap-add NET_RAW \
-  -v /opt/ngfw/config:/app/config:ro \
-  -v /var/log/ngfw:/var/log/ngfw \
-  -e NGFW_CONFIG=/app/config/config.yaml \
-  enterprise-ngfw:latest
+  -v /opt/CyberNexus/config:/app/config:ro \
+  -v /var/log/CyberNexus:/var/log/CyberNexus \
+  -e CyberNexus_CONFIG=/app/config/config.yaml \
+  enterprise-CyberNexus:latest
 ```
 
 ### Docker Compose
@@ -502,17 +502,17 @@ docker run -d \
 version: '3.8'
 
 services:
-  ngfw:
-    image: enterprise-ngfw:latest
+  CyberNexus:
+    image: enterprise-CyberNexus:latest
     network_mode: host
     cap_add:
       - NET_ADMIN
       - NET_RAW
     volumes:
       - ./config:/app/config:ro
-      - ./logs:/var/log/ngfw
+      - ./logs:/var/log/CyberNexus
     environment:
-      - NGFW_CONFIG=/app/config/config.yaml
+      - CyberNexus_CONFIG=/app/config/config.yaml
     restart: unless-stopped
 ```
 
@@ -524,10 +524,10 @@ services:
 
 ```bash
 # Check service status
-sudo systemctl status ngfw
+sudo systemctl status CyberNexus
 
 # Check logs
-sudo journalctl -u ngfw -n 50 --no-pager
+sudo journalctl -u CyberNexus -n 50 --no-pager
 
 # Check configuration
 python -c "import yaml; yaml.safe_load(open('config/config.yaml'))"
@@ -630,7 +630,7 @@ ebpf:
 ## 📞 Support
 
 For deployment issues:
-1. Check logs: `sudo journalctl -u ngfw -f`
+1. Check logs: `sudo journalctl -u CyberNexus -f`
 2. Review configuration: `cat config/config.yaml`
 3. Test health: `curl http://localhost:8080/health`
 4. Check [troubleshooting section](#🚨-troubleshooting)

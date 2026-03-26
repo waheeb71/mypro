@@ -1,6 +1,6 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════════
-# Enterprise NGFW v2.0 - System Updater (Thin CLI Wrapper)
+# Enterprise CyberNexus v2.0 - System Updater (Thin CLI Wrapper)
 # ═══════════════════════════════════════════════════════════════════
 #
 # This script is a lightweight wrapper around the built-in OTA Update API.
@@ -19,9 +19,9 @@ set -e
 # ── Defaults ────────────────────────────────────────────────────────
 BRANCH="main"
 CHECK_ONLY=false
-API_URL="${NGFW_API_URL:-http://localhost:8000}"
-INSTALL_DIR="${NGFW_HOME:-/opt/enterprise_ngfw}"
-SERVICE_NAME="ngfw"
+API_URL="${CyberNexus_API_URL:-http://localhost:8000}"
+INSTALL_DIR="${CyberNexus_HOME:-/opt/enterprise_CyberNexus}"
+SERVICE_NAME="CyberNexus"
 VENV_DIR="$INSTALL_DIR/venv"
 
 # ── Colors ──────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo -e "${CYAN}${BOLD}🔄 Enterprise NGFW — System Updater${NC}"
+echo -e "${CYAN}${BOLD}🔄 Enterprise CyberNexus — System Updater${NC}"
 echo ""
 
 # ── Try API-based update first (preferred) ────────────────────────────────────
@@ -51,12 +51,12 @@ if command -v curl &>/dev/null; then
     log_info "Checking update via API: $API_URL"
 
     # Login to get a token (reads env vars for credentials)
-    NGFW_ADMIN_USER="${NGFW_ADMIN_USER:-admin}"
-    NGFW_ADMIN_PASS="${NGFW_ADMIN_PASS:-admin123}"
+    CyberNexus_ADMIN_USER="${CyberNexus_ADMIN_USER:-admin}"
+    CyberNexus_ADMIN_PASS="${CyberNexus_ADMIN_PASS:-admin123}"
 
     TOKEN=$(curl -s -X POST "$API_URL/api/v1/auth/login" \
         -H "Content-Type: application/json" \
-        -d "{\"username\":\"$NGFW_ADMIN_USER\",\"password\":\"$NGFW_ADMIN_PASS\"}" \
+        -d "{\"username\":\"$CyberNexus_ADMIN_USER\",\"password\":\"$CyberNexus_ADMIN_PASS\"}" \
         | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('access_token',''))" 2>/dev/null)
 
     if [ -z "$TOKEN" ]; then

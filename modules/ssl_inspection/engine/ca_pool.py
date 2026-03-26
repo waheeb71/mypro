@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - CA Pool Manager (Multi-CA Support)
+Enterprise CyberNexus - CA Pool Manager (Multi-CA Support)
 ═══════════════════════════════════════════════════════════════════
 
 Handles Root CA, Intermediate CA, and dynamic certificate generation

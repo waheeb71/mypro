@@ -1,98 +1,87 @@
 """
 Web Filter Engine
-URL Filtering, Safe Search, and Category Blocking
+URL Filtering, Safe Search, and Category Blocking based on DB policies.
 """
 
 import logging
 import fnmatch
 from typing import List
 from system.policy.schema import WebFilterRule, PolicyContext, Action
-from .category import CategoryEngine, ContentCategory
+from system.database.database import SessionLocal
+from modules.web_filter.models import WebFilterConfig
+from modules.web_filter.policy.category import CategoryEngine
+from modules.web_filter.policy.safe_search import SafeSearch
 
 logger = logging.getLogger(__name__)
 
 class WebFilterEngine:
     """
-    Evaluates Web Filtering Rules.
-    - Category Blocking (Gambling, Adult, etc.)
-    - Exact URL Blocking
-    - Safe Search Enforcement
+    Evaluates Web Filtering Rules and global settings.
+    - Global Safe Search Enforcement
+    - Category-based Actions (ALLOW/BLOCK) from DB
     """
     
     def __init__(self):
         self.rules: List[WebFilterRule] = []
         self.logger = logger
         self.category_engine = CategoryEngine()
-        self.default_action = Action.ALLOW
+        self.config = self._load_config()
 
-    def load_rules(self, rules: List[WebFilterRule]):
-        self.rules = rules
-        self.logger.info(f"Loaded {len(self.rules)} Web Filter rules")
+    def _load_config(self) -> WebFilterConfig:
+        with SessionLocal() as db:
+            conf = db.query(WebFilterConfig).first()
+            if not conf:
+                conf = WebFilterConfig()
+                db.add(conf)
+                db.commit()
+                db.refresh(conf)
+            return conf
 
-    def evaluate(self, context: PolicyContext) -> Action:
-        """Evaluate web request"""
-        if not context.domain and not context.url:
+    def reload(self):
+        self.config = self._load_config()
+        self.category_engine.reload()
+
+    def evaluate(self, url: str, domain: str) -> Action:
+        """Evaluate web request against global config and categorizations"""
+        if not self.config.enabled:
             return Action.ALLOW
             
-        # Get category of the requested domain
-        domain_categories = []
-        if context.domain:
-            match = self.category_engine.categorize(context.domain)
-            # The categorize method returns ContentCategory enums (IntEnum). 
-            # We convert the IntEnum `.name` to lowercase string to match rule logic which expects strings like "social_networking"
-            domain_categories = [cat.name.lower() for cat in match.categories]
+        # 1. Safe Search Enforcement
+        if self.config.safe_search_enabled and domain:
+             if "google.com" in domain or "bing.com" in domain or "youtube.com" in domain:
+                 # In a true proxy, rewrite URL or return MONITOR to indicate interception.
+                 self.logger.info(f"WebFilter Enforcing Safe Search for: {domain}")
+                 # You could return Action.CHALLENGE or similar to rewrite
+                 pass # We rely on proxy/DNS level for CNAME enforcement or return specific action if we intercept HTTP
 
-        # Iterate through rules according to priority
-        for rule in self.rules:
-            if not rule.enabled:
-                continue
-                
-            match = False
-            
-            # 1. Rule-based Categories Check
-            if domain_categories and rule.categories:
-                # Check if there is an intersection between the domain's categories and rule's blocked categories
-                blocked_cats = [cat.lower() for cat in rule.categories]
-                intersection = set(domain_categories).intersection(set(blocked_cats))
-                
-                if intersection:
-                    self.logger.info(f"WebFilter Rule '{rule.name}' Blocked Category '{intersection}': {context.domain}")
-                    match = True
-                
-            # 2. File Types Check
-            if not match and context.url and rule.block_file_types:
-                url_lower = context.url.lower()
-                if any(url_lower.endswith(f".{ext.strip('.')}") for ext in rule.block_file_types):
-                    self.logger.info(f"WebFilter Rule '{rule.name}' Blocked File Type: {context.url}")
-                    match = True
-                    
-            # 3. Exact & Wildcard URLs Check
-            if not match and context.url and rule.exact_urls:
-                for target_url in rule.exact_urls:
-                    # Support wildcards like *example.com/admin*
-                    if fnmatch.fnmatch(context.url, target_url):
-                        self.logger.info(f"WebFilter Rule '{rule.name}' Blocked URL Pattern '{target_url}': {context.url}")
-                        match = True
-                        break
-                        
-            # 4. Exact Domain fallback logic inside wildcard check
-            if not match and context.domain and rule.exact_urls:
-                 for target_url in rule.exact_urls:
-                    if fnmatch.fnmatch(context.domain, target_url):
-                        self.logger.info(f"WebFilter Rule '{rule.name}' Blocked Domain Pattern '{target_url}': {context.domain}")
-                        match = True
-                        break
-            
-            # 5. Safe Search Enforcement
-            if not match and rule.safe_search and context.domain:
-                if "google.com" in context.domain or "bing.com" in context.domain or "youtube.com" in context.domain:
-                    # In a true proxy, we would rewrite the URL to append ?safe=active. 
-                    # Here we simulate the enforcement action.
-                    self.logger.info(f"WebFilter Rule '{rule.name}' Enforcing Safe Search for: {context.domain}")
-                    # Usually returned as a special action or handled transparently. returning MONITOR to indicate interception.
-                    return Action.MONITOR
-            
-            if match:
-                return rule.action
+        # 2. Categorize the domain
+        match = self.category_engine.categorize(domain)
         
-        return self.default_action
+        # 3. Apply action based on the highest priority category match
+        for cat in match.categories:
+            if cat == "UNRATED":
+                continue
+            
+            action_map = {
+                "ALLOW": Action.ALLOW,
+                "BLOCK": Action.BLOCK,
+                "REJECT": Action.REJECT,
+                "MONITOR": Action.MONITOR
+            }
+            
+            action_str = self.category_engine.get_category_action(cat)
+            action = action_map.get(action_str, Action.BLOCK)
+            
+            if action in (Action.BLOCK, Action.REJECT):
+                self.logger.info(f"WebFilter Blocked Domain '{domain}' due to category '{cat}'")
+                return action
+            elif action == Action.ALLOW:
+                 # If explicitly allowed, return ALLOW immediately
+                 return Action.ALLOW
+                 
+        # By default, rely on global config
+        default_act_str = self.config.default_action.upper()
+        if default_act_str == "ALLOW":
+            return Action.ALLOW
+        else:
+            return Action.BLOCK

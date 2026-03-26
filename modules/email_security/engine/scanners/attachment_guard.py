@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Email Attachment Guard
+Enterprise CyberNexus — Email Attachment Guard
 
 Scans email attachments for threats:
   1. Dangerous file extensions (block immediately)

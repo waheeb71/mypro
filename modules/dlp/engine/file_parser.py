@@ -11,7 +11,7 @@ class FileParser:
         """
         Attempts to extract plain text from binary payloads.
         In a full enterprise context, this would link to deep parsers (e.g. Apache Tika).
-        For performance on an NGFW, we do quick extraction.
+        For performance on an CyberNexus, we do quick extraction.
         """
         mime_type, _ = mimetypes.guess_type(filename)
         

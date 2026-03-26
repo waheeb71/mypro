@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — UBA Privilege Escalation / Sensitive Service Detector
+Enterprise CyberNexus — UBA Privilege Escalation / Sensitive Service Detector
 
 Detects access to high-privilege or previously never-used services.
 Combines unknown-service detection with a known privileged-service list.

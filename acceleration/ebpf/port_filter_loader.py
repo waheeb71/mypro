@@ -1,10 +1,10 @@
 """
-Enterprise NGFW v2.0 - eBPF Port Filter Loader
+Enterprise CyberNexus v2.0 - eBPF Port Filter Loader
 
 Python wrapper for loading and managing the XDP port filter program.
 Provides high-level API for port filtering configuration.
 
-Author: Enterprise NGFW Team
+Author: Enterprise CyberNexus Team
 License: Proprietary
 """
 

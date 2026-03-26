@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - Unified Event Sink
+Enterprise CyberNexus - Unified Event Sink
 ═══════════════════════════════════════════════════════════════════
 
 Centralized event collection point for all traffic paths.
@@ -70,7 +70,7 @@ class SinkConfig:
 
 class UnifiedEventSink:
     """
-    Unified Event Sink for Enterprise NGFW
+    Unified Event Sink for Enterprise CyberNexus
     
     Receives events from all traffic paths and forwards them
     to configured backends.

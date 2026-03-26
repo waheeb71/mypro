@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Recovery Manager
+Enterprise CyberNexus - Recovery Manager
 
 Handles automated rollback and recovery from mitigation actions
 once a threat has passed or a false positive is identified.

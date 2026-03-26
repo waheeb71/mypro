@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - DNS Security Plugin (Unified)
+Enterprise CyberNexus v2.0 - DNS Security Plugin (Unified)
 
 Consolidated DNS inspection engine:
   - Custom domain filter rules (EXACT / WILDCARD / REGEX)
@@ -9,7 +9,7 @@ Consolidated DNS inspection engine:
   - Suspicious TLD blocking
   - Threat-intel feed (local embedded list)
 
-Author: Enterprise NGFW Team
+Author: Enterprise CyberNexus Team
 License: Proprietary
 """
 

@@ -1,4 +1,4 @@
-# Enterprise NGFW v2.0 - Phase 2 & 3 Requirements
+# Enterprise CyberNexus v2.0 - Phase 2 & 3 Requirements
 
 # ============================================================================
 # Phase 2: eBPF Port Filtering

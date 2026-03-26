@@ -1,4 +1,4 @@
-# 🛡️ AI-Powered WAF Module — Enterprise NGFW
+# 🛡️ AI-Powered WAF Module — Enterprise CyberNexus
 
 نظام جدار حماية تطبيقات الويب (WAF) مدعوم بالذكاء الاصطناعي، مصمم لاكتشاف الهجمات المعقدة والبوتات وتجاوزات الـ WAF التقليدية.
 

@@ -39,7 +39,7 @@ def detect():
             headers=['Interface / Port', 'MAC Address', 'IP Address', 'Max Speed', 'Link Status'],
             tablefmt='grid'
         ))
-        click.echo(click.style("\nUse 'ngfw interfaces assign <port> --role <ROLE>' to bind security zones.", fg='yellow'))
+        click.echo(click.style("\nUse 'CyberNexus interfaces assign <port> --role <ROLE>' to bind security zones.", fg='yellow'))
     except Exception as e:
         click.echo(click.style(f'✗ Detection failed: {e}', fg='red'), err=True)
 

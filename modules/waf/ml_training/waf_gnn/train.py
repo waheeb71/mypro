@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — GNN Training Script
+Enterprise CyberNexus — GNN Training Script
 
 Trains the Graph Attention Network (GAT) on synthetic session graphs.
 

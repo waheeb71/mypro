@@ -1,11 +1,11 @@
-# CyberNexus Enterprise NGFW — Full System Documentation
+# CyberNexus Enterprise CyberNexus — Full System Documentation
 > Version 2.0.0 · March 2026 · Proprietary
 
 ---
 
 ## 1. Overview
 
-**CyberNexus** is a software-defined Enterprise Next-Generation Firewall (NGFW) built on Python 3.10+ and React. It merges classical packet routing with deep Layer 7 application inspection, multi-layer AI-driven threat detection, eBPF kernel acceleration, and a fully web-first management interface.
+**CyberNexus** is a software-defined Enterprise Next-Generation Firewall (CyberNexus) built on Python 3.10+ and React. It merges classical packet routing with deep Layer 7 application inspection, multi-layer AI-driven threat detection, eBPF kernel acceleration, and a fully web-first management interface.
 
 ### Design Philosophy
 - **Zero Configuration Required**: Automatic network interface discovery and role assignment.
@@ -74,7 +74,7 @@
 ## 3. Component Breakdown
 
 ### 3.1 Core Engine (`core/engine.py`)
-The `NGFWApplication` class is the supervisor for all sub-systems. Responsible for:
+The `CyberNexusApplication` class is the supervisor for all sub-systems. Responsible for:
 - Loading and validating `config.yaml`.
 - Initializing each component in the correct dependency order.
 - Managing graceful startup and shutdown.
@@ -90,7 +90,7 @@ Leverages Linux eBPF (Extended Berkeley Packet Filter) maps and XDP (eXpress Dat
 | `SSLInspector` | Creates MiTM SSL tunnels; decrypts traffic for DPI layer |
 | `SSLPolicyEngine` | Decides which domains/IPs to bypass inspection (e.g., banking, medical) |
 
-**Client Setup Required:** The NGFW Root CA certificate (downloadable from the Web UI → Certificate Manager) must be installed in the Trusted Store of each intercepted device.
+**Client Setup Required:** The CyberNexus Root CA certificate (downloadable from the Web UI → Certificate Manager) must be installed in the Trusted Store of each intercepted device.
 
 ### 3.4 Inspection Pipeline (`inspection/`)
 An ordered plugin pipeline. Each plugin inspects the decrypted HTTP payload and can block or allow:
@@ -222,7 +222,7 @@ All endpoints (except `/auth/login` and `/health`) require a JWT Bearer token.
 ### Start Everything (Production)
 ```bash
 # Must be run as root for kernel/socket access
-sudo python main.py -c /etc/ngfw/config.yaml
+sudo python main.py -c /etc/CyberNexus/config.yaml
 ```
 
 ### Start API Only (Development / UI Testing)
@@ -258,8 +258,8 @@ proxy:
   transparent_intercept_port: 8443
   
 tls:
-  ca_cert_path: /etc/ngfw/certs/ca.crt
-  ca_key_path: /etc/ngfw/certs/ca.key
+  ca_cert_path: /etc/CyberNexus/certs/ca.crt
+  ca_key_path: /etc/CyberNexus/certs/ca.key
   inspect: true               # Enable SSL decryption
   bypass_domains:             # Domains to never inspect
     - "*.bank.com"
@@ -292,7 +292,7 @@ api:
 
 logging:
   level: INFO
-  file: /var/log/ngfw/ngfw.log
+  file: /var/log/CyberNexus/CyberNexus.log
   max_bytes: 104857600        # 100 MB before rotation
   backup_count: 10
 ```
@@ -302,13 +302,13 @@ logging:
 ## 8. Security Notes
 
 1. **Run as Root Safely**: Use Linux capabilities (`CAP_NET_ADMIN`, `CAP_BPF`) instead of full root where possible.
-2. **JWT Secret**: Set `NGFW_SECRET_KEY` environment variable to a strong random string in production.  
+2. **JWT Secret**: Set `CyberNexus_SECRET_KEY` environment variable to a strong random string in production.  
    ```bash
-   export NGFW_SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+   export CyberNexus_SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
    ```
-3. **CORS**: Set `NGFW_ALLOWED_ORIGINS` to only your dashboard host.
-4. **CA Private Key**: The file `/etc/ngfw/certs/ca.key` must have `chmod 600` and never leave the appliance.
+3. **CORS**: Set `CyberNexus_ALLOWED_ORIGINS` to only your dashboard host.
+4. **CA Private Key**: The file `/etc/CyberNexus/certs/ca.key` must have `chmod 600` and never leave the appliance.
 
 ---
 
-*CyberNexus Enterprise NGFW — All Rights Reserved © 2026*
+*CyberNexus Enterprise CyberNexus — All Rights Reserved © 2026*

@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - QoS Manager
+Enterprise CyberNexus - QoS Manager
 
 Implements traffic shaping and bandwidth limits using a Token Bucket algorithm.
 Provides limits per IP, subnets, or globally.

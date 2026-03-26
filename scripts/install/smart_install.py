@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Enterprise NGFW v2.0 - Advanced AI-Driven Installer for Linux
+Enterprise CyberNexus v2.0 - Advanced AI-Driven Installer for Linux
 Replaces the legacy install.sh with an intelligent, self-healing deployment script.
 
 Features:
 - Autonomous error resolution using Gemini AI.
-- Full context awareness of the Enterprise NGFW ecosystem.
+- Full context awareness of the Enterprise CyberNexus ecosystem.
 - Creates shortcuts, systemd services, Python venvs, and installs system deps.
 """
 
@@ -19,16 +19,16 @@ import urllib.error
 import time
 
 # ================= Configuration =================
-TARGET_DIR = "/opt/enterprise_ngfw"
-BIN_CMD = "/usr/local/bin/ngfw-start"
-SERVICE_FILE = "/etc/systemd/system/ngfw.service"
+TARGET_DIR = "/opt/enterprise_CyberNexus"
+BIN_CMD = "/usr/local/bin/CyberNexus-start"
+SERVICE_FILE = "/etc/systemd/system/CyberNexus.service"
 VENV_DIR = os.path.join(TARGET_DIR, "venv")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # 🧠 Comprehensive System Context for the AI
 SYSTEM_CONTEXT = """
-Enterprise Next-Generation Firewall (NGFW) v2.0 Architecture & Requirements Context:
+Enterprise Next-Generation Firewall (CyberNexus) v2.0 Architecture & Requirements Context:
 
 1. Core Technologies:
    - Language: Python 3.9+ 
@@ -55,7 +55,7 @@ Enterprise Next-Generation Firewall (NGFW) v2.0 Architecture & Requirements Cont
    - clang, llvm, libbpf-dev, linux-headers-$(uname -r) (for eBPF)
 
 4. Operating Environment:
-   - Target install directory: /opt/enterprise_ngfw
+   - Target install directory: /opt/enterprise_CyberNexus
    - Main execution point: python api/rest/main.py
    - Configuration file: system/config/base.yaml (Controls dynamic Plugin loading via ModuleManager)
 
@@ -64,7 +64,7 @@ If the user encounters an installation error, YOU (the AI) must provide a ONE-LI
 
 def print_banner():
     print("\033[0;36m" + "="*70 + "\033[0m")
-    print("\033[1;36m    🛡️  Enterprise NGFW v2.0 - Smart AI-Installer 🧠  \033[0m")
+    print("\033[1;36m    🛡️  Enterprise CyberNexus v2.0 - Smart AI-Installer 🧠  \033[0m")
     print("\033[0;36m" + "="*70 + "\033[0m")
 
 def print_step(msg):
@@ -235,12 +235,12 @@ def create_system_shortcut():
     print_step(f"Creating global executable shortcut at {BIN_CMD}")
     
     script_content = f"""#!/bin/bash
-# Enterprise NGFW Startup wrapper
+# Enterprise CyberNexus Startup wrapper
 cd {TARGET_DIR}
 source {VENV_DIR}/bin/activate
 export PYTHONPATH="{TARGET_DIR}:$PYTHONPATH"
-export NGFW_ENV="production"
-export NGFW_CONFIG="{TARGET_DIR}/system/config/base.yaml"
+export CyberNexus_ENV="production"
+export CyberNexus_CONFIG="{TARGET_DIR}/system/config/base.yaml"
 
 # Start the main API which dynamically loads all modules
 python api/rest/main.py "$@"
@@ -249,7 +249,7 @@ python api/rest/main.py "$@"
         with open(BIN_CMD, 'w', encoding='utf-8') as f:
             f.write(script_content)
         os.chmod(BIN_CMD, 0o755)
-        print_success(f"Shortcut created! You can now run the system anywhere using: ngfw-start")
+        print_success(f"Shortcut created! You can now run the system anywhere using: CyberNexus-start")
     except Exception as e:
         print_error(f"Failed to create shortcut: {e}")
 
@@ -257,7 +257,7 @@ def create_systemd_service():
     print_step("Creating Systemd Service for Autostart")
     
     service_content = f"""[Unit]
-Description=Enterprise Next-Gen Firewall (NGFW) v2.0
+Description=Enterprise Next-Gen Firewall (CyberNexus) v2.0
 After=network.target
 
 [Service]
@@ -277,8 +277,8 @@ WantedBy=multi-user.target
         
         if shutil.which("systemctl"):
             subprocess.run(["systemctl", "daemon-reload"], check=True)
-            subprocess.run(["systemctl", "enable", "ngfw"], check=True)
-            print_success(f"Systemd service created ({SERVICE_FILE}). Start with: systemctl start ngfw")
+            subprocess.run(["systemctl", "enable", "CyberNexus"], check=True)
+            print_success(f"Systemd service created ({SERVICE_FILE}). Start with: systemctl start CyberNexus")
         else:
             print_success(f"Systemd service file created at {SERVICE_FILE}")
             
@@ -300,10 +300,10 @@ def main():
     print("\033[1;32m✨ Installation Completed Successfully! ✨\033[0m")
     print("\033[0;32m" + "="*70 + "\033[0m")
     print("To start the system right now, run:")
-    print("   \033[1;33mngfw-start\033[0m")
+    print("   \033[1;33mCyberNexus-start\033[0m")
     print("\nOr to run it as a background service:")
-    print("   \033[1;33msystemctl start ngfw\033[0m")
-    print("   \033[1;33msystemctl status ngfw\033[0m")
+    print("   \033[1;33msystemctl start CyberNexus\033[0m")
+    print("   \033[1;33msystemctl status CyberNexus\033[0m")
     print("\nThe API and Dashboard will start on \033[1mhttp://0.0.0.0:8000\033[0m")
     print("======================================================================")
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - Database Backend
+Enterprise CyberNexus - Database Backend
 ═══════════════════════════════════════════════════════════════════
 
 Database backend for event storage.
@@ -59,7 +59,7 @@ class DatabaseBackend(EventBackend):
         super().__init__(config)
         
         self.db_type = config.get('db_type', 'sqlite').lower()
-        self.connection_string = config.get('connection_string', 'ngfw_events.db')
+        self.connection_string = config.get('connection_string', 'CyberNexus_events.db')
         self.table_name = config.get('table_name', 'events')
         self.auto_create_table = config.get('auto_create_table', True)
         

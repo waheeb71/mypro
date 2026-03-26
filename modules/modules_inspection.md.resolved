@@ -1,11 +1,11 @@
 # 🛡️ الفحص الشامل لوحدات النظام (Modules Inspection)
-يعرّف مجلد `F:\enterprise_ngfw\modules` قلب الجدار الناري الذكي (Enterprise NGFW)، حيث يحتوي على 15 وحدة أمنية متكاملة تعمل جنباً إلى جنب لبناء جدار ناري من الجيل القادم (Next-Gen Firewall). 
+يعرّف مجلد `F:\enterprise_CyberNexus\modules` قلب الجدار الناري الذكي (Enterprise CyberNexus)، حيث يحتوي على 15 وحدة أمنية متكاملة تعمل جنباً إلى جنب لبناء جدار ناري من الجيل القادم (Next-Gen Firewall). 
 
 كل وحدة مبنية بهندسة معمارية موحدة تتكون غالباً من:
 - **`api/`**: مسارات FastAPI الخاصة بالوحدة.
 - **`engine/`**: المحرك الأساسي (Core Logic).
-- **[models/](file:///f:/enterprise_ngfw/system/database/database.py#476-482)**: نماذج قاعدة البيانات (SQLAlchemy/Pydantic).
-- **[policy/](file:///f:/enterprise_ngfw/modules/predictive_ai/engine/reinforcement_learning.py#95-116)**: محرك القواعد المتخصصة.
+- **[models/](file:///f:/enterprise_CyberNexus/system/database/database.py#476-482)**: نماذج قاعدة البيانات (SQLAlchemy/Pydantic).
+- **[policy/](file:///f:/enterprise_CyberNexus/modules/predictive_ai/engine/reinforcement_learning.py#95-116)**: محرك القواعد المتخصصة.
 
 ## 🧱 تفاصيل الوحدات الـ 15 (Modules)
 
@@ -13,7 +13,7 @@
 |---|---|---|
 | **1. `waf`** | **Web Application Firewall** | متخصص بالطبقة السابعة (Layer 7). يمنع هجمات الويب مثل SQLi, XSS ويعتمد بشكل قوي على الذكاء الاصطناعي (GNN) لصد الـ Bots والهجمات الموزعة (DDoS). |
 | **2. `ids_ips`** | **Intrusion Detection/Prevention** | يعتمد على اكتشاف الشذوذ (Anomaly Detection) وتوقيعات الهجمات الشبكية. يراقب الـ Packets ليمنع الاختراقات قبل وصولها للتطبيق. |
-| **3. [firewall](file:///f:/enterprise_ngfw/system/core/engine.py#317-333)** | **L3/L4 Network Firewall** | جدار الحماية التقليدي المتقدم، يتحكم بالقرارات السريعة لغلق الـ IPs، البورتات (Ports)، ومراقبة حالة الاتصال (Stateful Tracking). |
+| **3. [firewall](file:///f:/enterprise_CyberNexus/system/core/engine.py#317-333)** | **L3/L4 Network Firewall** | جدار الحماية التقليدي المتقدم، يتحكم بالقرارات السريعة لغلق الـ IPs، البورتات (Ports)، ومراقبة حالة الاتصال (Stateful Tracking). |
 | **4. `ssl_inspection`** | **TLS/SSL Decryption MITM** | وحدة كسر التشفير. تقوم بدور رجل في المنتصف (Proxy) لفك تشفير بروتوكول HTTPS لقراءة محتواه وفحصه ثم إعادة تشفيره. |
 | **5. `dlp`** | **Data Loss Prevention** | وحدة منع تسرب البيانات. تقوم بفحص المحتوى الخارج من الشبكة للتأكد من عدم تسريب أرقام بطاقات ائتمان، كلمات مرور، أو وثائق سرية. |
 | **6. `malware_av`** | **Anti-Virus & Malware Analysis** | مكافح الجذور الخبيثة. يعتمد على نماذج الذكاء الاصطناعي (مثل XGBoost) لتحليل الملفات التنفيذية (PE) وحظر الفيروسات قبل تحميلها. |
@@ -25,14 +25,14 @@
 | **12. `http_inspection`** | **Deep HTTP Inspector** | وحدة فحص عميق للطبقة السابعة (Headers, Cookies). تدقق على كل تفاصيل حزم الـ HTTP للمساعدة في التحليل السريع. |
 | **13. `qos`** | **Quality of Service** | إدارة عرض النطاق الترددي (Bandwidth). لتحديد سرعات معينة (Rate Limiting) وتخصيص موارد للاتصالات المهمة وإبطاء المتصلين المزعجين. |
 | **14. `proxy`** | **Transparent MITM Routing** | العصب الذي يربط المستخدمين بالجدار الناري بشفافية ودون علمهم (Transparent Proxy) عبر توجيه البيانات مروراً بوحدات الفحص. |
-| **15. [vpn](file:///f:/enterprise_ngfw/system/core/engine.py#388-406)** | **Virtual Private Network** | وحدة إدارة الأنفاق المشفرة (Site-to-Site أو Client-to-Site) لتأمين ربط الفروع وتأمين دخول الموظفين عن بُعد، غالباً بناءً على WireGuard/IPsec. |
+| **15. [vpn](file:///f:/enterprise_CyberNexus/system/core/engine.py#388-406)** | **Virtual Private Network** | وحدة إدارة الأنفاق المشفرة (Site-to-Site أو Client-to-Site) لتأمين ربط الفروع وتأمين دخول الموظفين عن بُعد، غالباً بناءً على WireGuard/IPsec. |
 
 ---
 
 ## 🛠️ كيف تعمل هذه الوحدات معاً؟
 تعمل هذه الوحدات على هيئة مصنع تفتيش (Inspection Pipeline) تراتبي. تبدأ البيانات من الطبقات السُفلى وتتشعب للطبقات العُليا:
 
-1. **دخول البيانات (Data Ingress):** تدخل الحزم أولاً لوحدة [firewall](file:///f:/enterprise_ngfw/system/core/engine.py#317-333) لفلترة السريعة (IP البلوك). 
+1. **دخول البيانات (Data Ingress):** تدخل الحزم أولاً لوحدة [firewall](file:///f:/enterprise_CyberNexus/system/core/engine.py#317-333) لفلترة السريعة (IP البلوك). 
 2. **فك التشفير (Decryption):** تُحول إلى `ssl_inspection` لفتح التشفير عبر `proxy`.
 3. **الفحص العميق الذكي:** تُرسل البيانات الصافية بالتوازي إلى (`waf`, `ids_ips`, `malware_av`, `dlp`).
 4. **القرار الديناميكي:** في الوقت نفسه، تراقب وحدة `uba` سلوك المستخدم بينما تتنبأ `predictive_ai` بالخطوة التالية للهجوم لتعديل النظام تلقائياً.

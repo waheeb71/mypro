@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF Settings Loader
+Enterprise CyberNexus — WAF Settings Loader
 
 Reads `config/defaults/waf.yaml` (and optional `config/waf.local.yaml` override)
 and exposes typed, validated settings with a clean API.
@@ -184,6 +184,24 @@ class RateLimiterSettings:
     adaptive_ratelimit:   bool  = True
 
 @dataclass
+class XAISettings:
+    enabled: bool = True
+    explainer_type: str = "shap"  # "shap" or "lime"
+
+@dataclass
+class GraphQLSettings:
+    enabled: bool = True
+    max_depth: int = 5
+    max_batched_queries: int = 10
+    detect_introspection: bool = True
+
+@dataclass
+class EBPFSettings:
+    enabled: bool = False  # Keep false by default as it requires kernel privileges
+    bpf_map_size: int = 100000
+    fast_drop_action: str = "DROP"
+
+@dataclass
 class PerformanceSettings:
     max_inspection_time_ms:    int  = 50
     fail_open:                 bool = True
@@ -204,7 +222,7 @@ class WAFLoggingSettings:
     log_challenged:  bool = True
     log_allowed:     bool = False
     include_payload: bool = False
-    log_file:        str  = "/var/log/ngfw/waf.log"
+    log_file:        str  = "/var/log/CyberNexus/waf.log"
 
 
 # ══════════════════════════════════════════════
@@ -242,9 +260,14 @@ class WAFSettings:
     rate_limiter:   RateLimiterSettings        = field(default_factory=RateLimiterSettings)
     
     risk_scoring:   RiskScoringSettings   = field(default_factory=RiskScoringSettings)
+    xai_explainer:  XAISettings           = field(default_factory=XAISettings)
     deception_engine: DeceptionEngineSettings = field(default_factory=DeceptionEngineSettings)
     self_learning:  SelfLearningSettings  = field(default_factory=SelfLearningSettings)
     shadow_mode:    ShadowModeSettings    = field(default_factory=ShadowModeSettings)
+    
+    graphql_inspector: GraphQLSettings    = field(default_factory=GraphQLSettings)
+    ebpf_acceleration: EBPFSettings       = field(default_factory=EBPFSettings)
+    
     performance:    PerformanceSettings   = field(default_factory=PerformanceSettings)
     whitelist:      AccessListSettings    = field(default_factory=AccessListSettings)
     blacklist:      AccessListSettings    = field(default_factory=AccessListSettings)
@@ -373,6 +396,15 @@ class WAFSettings:
                     "shadow_mode": {
                         "enabled": self.shadow_mode.enabled,
                         "observation_window_hours": self.shadow_mode.observation_window_hours
+                    },
+                    "xai_explainer": {
+                        "enabled": self.xai_explainer.enabled
+                    },
+                    "graphql_inspector": {
+                        "enabled": self.graphql_inspector.enabled
+                    },
+                    "ebpf_acceleration": {
+                        "enabled": self.ebpf_acceleration.enabled
                     },
                     "rate_limiter": {
                         "enabled": self.rate_limiter.enabled,
@@ -533,6 +565,30 @@ class WAFSettings:
             ),
         )
 
+        # XAI Explainer
+        xai = d.get("xai_explainer", {})
+        s.xai_explainer = XAISettings(
+            enabled        = xai.get("enabled", True),
+            explainer_type = xai.get("explainer_type", "shap")
+        )
+
+        # GraphQL Inspector
+        gql = d.get("graphql_inspector", {})
+        s.graphql_inspector = GraphQLSettings(
+            enabled             = gql.get("enabled", True),
+            max_depth           = gql.get("max_depth", 5),
+            max_batched_queries = gql.get("max_batched_queries", 10),
+            detect_introspection= gql.get("detect_introspection", True)
+        )
+
+        # eBPF Acceleration
+        ebpf = d.get("ebpf_acceleration", {})
+        s.ebpf_acceleration = EBPFSettings(
+            enabled          = ebpf.get("enabled", False),
+            bpf_map_size     = ebpf.get("bpf_map_size", 100000),
+            fast_drop_action = ebpf.get("fast_drop_action", "DROP")
+        )
+
         # Self-Learning
         sl = d.get("self_learning", {})
         s.self_learning = SelfLearningSettings(
@@ -582,7 +638,7 @@ class WAFSettings:
             log_challenged  = lg.get("log_challenged", True),
             log_allowed     = lg.get("log_allowed", False),
             include_payload = lg.get("include_payload", False),
-            log_file        = lg.get("log_file", "/var/log/ngfw/waf.log"),
+            log_file        = lg.get("log_file", "/var/log/CyberNexus/waf.log"),
         )
 
         return s
@@ -610,7 +666,10 @@ class WAFSettings:
             f"  Fingerprinting  : {on(self.fingerprint.enabled)}  (JA3={on(self.fingerprint.check_ja3)})",
             f"  ATO Protector   : {on(self.ato_protector.enabled)}",
             f"  Rate Limiter    : {on(self.rate_limiter.enabled)}  (Adaptive={on(self.rate_limiter.adaptive_ratelimit)})",
+            f"  GraphQL Guard   : {on(self.graphql_inspector.enabled)}",
+            f"  eBPF Fast Path  : {on(self.ebpf_acceleration.enabled)}",
             f"  Risk Scoring    : {on(self.risk_scoring.enabled)}",
+            f"  XAI Explanations: {on(self.xai_explainer.enabled)}",
             f"  Self-Learning   : {on(self.self_learning.enabled)}",
             f"{'─'*50}",
             f"  Block threshold : {self.risk_scoring.thresholds.block:.0%}",

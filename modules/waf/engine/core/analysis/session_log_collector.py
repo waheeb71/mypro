@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF Session Log Collector
+Enterprise CyberNexus — WAF Session Log Collector
 
 Collects HTTP session data in real-time as traffic flows through the WAF.
 Persists data to a CSV file for later use in GNN model training.

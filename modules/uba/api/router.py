@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — UBA REST API
+Enterprise CyberNexus — UBA REST API
 ================================
 Prefix: /api/v1/uba
 
@@ -61,9 +61,9 @@ class UBAEventSubmit(BaseModel):
 
 
 def _get_db(request: Request):
-    ngfw = getattr(request.app.state, "ngfw_app", None)
-    if ngfw and hasattr(ngfw, "db"):
-        return ngfw.db
+    CyberNexus = getattr(request.app.state, "CyberNexus_app", None)
+    if CyberNexus and hasattr(CyberNexus, "db"):
+        return CyberNexus.db
     raise HTTPException(status_code=503, detail="Database not available")
 
 
@@ -115,10 +115,10 @@ def _profile_to_dict(p) -> dict:
 
 def _get_profiler(request: Request):
     """Return a UserProfiler wired to the live DB+ config."""
-    ngfw = getattr(request.app.state, "ngfw_app", None)
-    if ngfw is None:
-        raise HTTPException(status_code=503, detail="NGFW not initialized")
-    db = getattr(ngfw, "db", None)
+    CyberNexus = getattr(request.app.state, "CyberNexus_app", None)
+    if CyberNexus is None:
+        raise HTTPException(status_code=503, detail="CyberNexus not initialized")
+    db = getattr(CyberNexus, "db", None)
     from modules.uba.engine.core.user_profiler import UserProfiler
     try:
         cfg = _get_or_create_uba_config(db) if db else None

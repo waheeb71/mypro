@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Data Loss Prevention (DLP) Plugin
+Enterprise CyberNexus - Data Loss Prevention (DLP) Plugin
 
 Scans payloads for sensitive information like Credit Cards, SSNs, and 
 confidential keywords to prevent data exfiltration.
@@ -66,7 +66,7 @@ class DLPInspectorPlugin(InspectorPlugin):
             return InspectionResult(action=action, findings=[])
 
         # Attempt decoding payload for text-based pattern matching
-        # In real NGFW, file_parser.py handles binaries, but here we do simple decoding
+        # In real CyberNexus, file_parser.py handles binaries, but here we do simple decoding
         try:
             text_data = data.decode('utf-8', errors='ignore')
         except Exception:

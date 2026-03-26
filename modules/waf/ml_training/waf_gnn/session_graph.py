@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Session Graph Builder
+Enterprise CyberNexus — Session Graph Builder
 
 Converts a sequence of HTTP requests from a single session (IP/session-id)
 into a directed graph representation for GNN analysis.

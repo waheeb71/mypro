@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - Integration Tests
+Enterprise CyberNexus - Integration Tests
 
 Tests for:
 - XDP to Sink event flow

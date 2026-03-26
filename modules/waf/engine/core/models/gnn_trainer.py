@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — GNN Background Training Job
+Enterprise CyberNexus — GNN Background Training Job
 
 Provides a thread-safe background training job for the WAF GNN model.
 Runs without interrupting live traffic inspection.

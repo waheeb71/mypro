@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - Category Blocker
+Enterprise CyberNexus v2.0 - Category Blocker
 
 Content category-based blocking with 90+ predefined categories.
 
@@ -10,7 +10,7 @@ Features:
 - Custom category definitions
 - Multi-category matching
 
-Author: Enterprise NGFW Team
+Author: Enterprise CyberNexus Team
 License: Proprietary
 """
 

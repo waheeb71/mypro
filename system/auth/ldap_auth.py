@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enterprise NGFW - LDAP/Active Directory Authentication
+Enterprise CyberNexus - LDAP/Active Directory Authentication
 
 Features:
 - LDAP bind/search for user authentication
@@ -32,13 +32,13 @@ class LDAPAuthenticator:
     LDAP/Active Directory Authentication
 
     Authenticates users against an LDAP directory and maps
-    AD groups to NGFW roles.
+    AD groups to CyberNexus roles.
     """
 
     # Default group-to-role mapping
     DEFAULT_ROLE_MAP = {
-        "ngfw-admins": "admin",
-        "ngfw-operators": "operator",
+        "CyberNexus-admins": "admin",
+        "CyberNexus-operators": "operator",
         "Domain Admins": "admin",
     }
 
@@ -165,7 +165,7 @@ class LDAPAuthenticator:
             return None
 
     def _resolve_role(self, groups: List[str]) -> str:
-        """Map AD groups to NGFW role"""
+        """Map AD groups to CyberNexus role"""
         for group, role in self.role_mapping.items():
             if group in groups:
                 return role

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enterprise NGFW - Traffic Profiler
+Enterprise CyberNexus - Traffic Profiler
 Real-time traffic pattern classification and behavioral profiling
 """
 

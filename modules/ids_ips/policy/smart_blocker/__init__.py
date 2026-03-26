@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - Smart Blocker Package
+Enterprise CyberNexus v2.0 - Smart Blocker Package
 
 Intelligent blocking system with reputation scoring, GeoIP filtering,
 category-based blocking, and threat intelligence integration.

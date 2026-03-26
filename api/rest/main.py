@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - REST API Entry Point
+Enterprise CyberNexus - REST API Entry Point
 =========================================
 This is the ONLY file that assembles the application.
 All actual endpoints live in api/rest/endpoints/.
@@ -38,23 +38,23 @@ def _seed_default_users(app: FastAPI) -> None:
     Called once at startup.
     If the 'users' table is empty, create admin (and operator) accounts
     using passwords taken from environment variables:
-        NGFW_ADMIN_PASSWORD    (default: Admin@1234)
-        NGFW_OPERATOR_PASSWORD (default: Operator@1234)
+        CyberNexus_ADMIN_PASSWORD    (default: Admin@1234)
+        CyberNexus_OPERATOR_PASSWORD (default: Operator@1234)
     Has no effect if users already exist.
     """
     try:
-        ngfw = getattr(app.state, "ngfw", None)
-        if ngfw is None or not hasattr(ngfw, "db"):
-            logger.warning("⚠️  NGFW state not ready – skipping user seeding.")
+        CyberNexus = getattr(app.state, "CyberNexus", None)
+        if CyberNexus is None or not hasattr(CyberNexus, "db"):
+            logger.warning("⚠️  CyberNexus state not ready – skipping user seeding.")
             return
 
         from api.rest.auth import _hash_password
         from system.database.database import User
 
-        admin_pw   = os.getenv("NGFW_ADMIN_PASSWORD",    "Admin@1234")
-        operator_pw = os.getenv("NGFW_OPERATOR_PASSWORD", "Operator@1234")
+        admin_pw   = os.getenv("CyberNexus_ADMIN_PASSWORD",    "Admin@1234")
+        operator_pw = os.getenv("CyberNexus_OPERATOR_PASSWORD", "Operator@1234")
 
-        db = ngfw.db
+        db = CyberNexus.db
         with db.session() as session:
             user_count = session.query(User).count()
 
@@ -79,15 +79,15 @@ def _seed_default_users(app: FastAPI) -> None:
 # ── Lifespan ──────────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🚀 Enterprise NGFW API starting…")
+    logger.info("🚀 Enterprise CyberNexus API starting…")
     _seed_default_users(app)
     yield
-    logger.info("🛑 Enterprise NGFW API shut down.")
+    logger.info("🛑 Enterprise CyberNexus API shut down.")
 
 # ── Application Factory ───────────────────────────────────────────────────────
 def create_app() -> FastAPI:
     application = FastAPI(
-        title="Enterprise NGFW API",
+        title="Enterprise CyberNexus API",
         description=(
             "Next-Generation Firewall — Production REST API.\n\n"
             "**Authentication:** Bearer JWT (obtain via `/api/v1/auth/login`).\n\n"
@@ -193,6 +193,6 @@ if __name__ == "__main__":
         "api.rest.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=os.getenv("NGFW_ENV", "production") == "development",
+        reload=os.getenv("CyberNexus_ENV", "production") == "development",
         log_level="info",
     )

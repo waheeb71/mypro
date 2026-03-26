@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - File Backend
+Enterprise CyberNexus - File Backend
 ═══════════════════════════════════════════════════════════════════
 
 File-based event storage backend.

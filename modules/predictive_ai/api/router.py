@@ -93,7 +93,7 @@ EXPECTED_MODELS = [
     }
 ]
 
-MODELS_DIR = Path("m:/نسخ المشروع/enterprise_ngfw/models")
+MODELS_DIR = Path("m:/نسخ المشروع/enterprise_CyberNexus/models")
 
 def _get_model_status(model_id: str) -> Dict[str, Any]:
     """Helper to determine if a model file actually exists and its status"""

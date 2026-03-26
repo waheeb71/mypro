@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Configuration Management Endpoints
+Enterprise CyberNexus - Configuration Management Endpoints
 GET    /api/v1/config                       — Read full config  (admin)
 PUT    /api/v1/config                       — Update a key      (admin)
 GET    /api/v1/config/modules               — List module state (operator+)
@@ -96,9 +96,9 @@ def _write_config_conf(update_key: str, update_val: Any, filename: str):
 def _hot_reload(request: Request):
     """Trigger config reload on the running engine if available."""
     try:
-        ngfw = getattr(request.app.state, "ngfw_app", None)
-        if ngfw and hasattr(ngfw, "reload_config"):
-            ngfw.reload_config()
+        CyberNexus = getattr(request.app.state, "CyberNexus_app", None)
+        if CyberNexus and hasattr(CyberNexus, "reload_config"):
+            CyberNexus.reload_config()
     except Exception as e:
         logger.warning(f"Hot-reload skipped: {e}")
 
@@ -193,10 +193,10 @@ async def toggle_module(
         _write_config(cfg)
 
         # Hot-reload inspection pipeline if engine is running
-        ngfw = getattr(request.app.state, "ngfw_app", None)
-        if ngfw and hasattr(ngfw, "inspection_pipeline"):
+        CyberNexus = getattr(request.app.state, "CyberNexus_app", None)
+        if CyberNexus and hasattr(CyberNexus, "inspection_pipeline"):
             from system.core.module_manager import ModuleManager
-            pipeline = ngfw.inspection_pipeline
+            pipeline = CyberNexus.inspection_pipeline
             for p in list(pipeline._plugins_by_name.keys()):
                 pipeline.unregister_plugin(p)
             ModuleManager(cfg, pipeline).load_plugins()

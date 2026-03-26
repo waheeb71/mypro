@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Mitigation Orchestrator
+Enterprise CyberNexus - Mitigation Orchestrator
 
 Handles automated threat mitigation responses such as network isolation,
 blackholing, and service degradation.

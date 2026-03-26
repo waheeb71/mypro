@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - WireGuard VPN Manager
+Enterprise CyberNexus - WireGuard VPN Manager
 
 Manages WireGuard VPN interfaces, keys, and peers for Site-to-Site
 and Remote Access VPN capabilities.

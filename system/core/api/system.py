@@ -52,7 +52,7 @@ async def assign_interface(request: InterfaceAssignRequest, token: dict = Depend
 @router.get("/daemon/status")
 async def daemon_status(request: Request):
     """Get the current status of the Daemon and Engine via internal main state"""
-    ctrl = getattr(request.app.state, 'ngfw_controller', None)
+    ctrl = getattr(request.app.state, 'CyberNexus_controller', None)
     return {
         "daemon": "online",
         "engine_running": getattr(ctrl, 'engine_running', True) if ctrl else False
@@ -60,10 +60,10 @@ async def daemon_status(request: Request):
 
 @router.post("/engine/start")
 async def start_engine(request: Request, token: dict = Depends(require_admin)):
-    """Start the main.py NGFW Engine Inspection Components"""
-    ctrl = getattr(request.app.state, 'ngfw_controller', None)
+    """Start the main.py CyberNexus Engine Inspection Components"""
+    ctrl = getattr(request.app.state, 'CyberNexus_controller', None)
     if not ctrl:
-        raise HTTPException(status_code=500, detail="NGFW Controller not found in app state")
+        raise HTTPException(status_code=500, detail="CyberNexus Controller not found in app state")
         
     if getattr(ctrl, 'engine_running', True):
         return {"status": "success", "message": "Engine is already running."}
@@ -76,10 +76,10 @@ async def start_engine(request: Request, token: dict = Depends(require_admin)):
 
 @router.post("/engine/stop")
 async def stop_engine(request: Request, token: dict = Depends(require_admin)):
-    """Stop the main.py NGFW Engine Inspection Components natively"""
-    ctrl = getattr(request.app.state, 'ngfw_controller', None)
+    """Stop the main.py CyberNexus Engine Inspection Components natively"""
+    ctrl = getattr(request.app.state, 'CyberNexus_controller', None)
     if not ctrl:
-        raise HTTPException(status_code=500, detail="NGFW Controller not found in app state")
+        raise HTTPException(status_code=500, detail="CyberNexus Controller not found in app state")
         
     if not getattr(ctrl, 'engine_running', True):
         return {"status": "success", "message": "Engine is already stopped."}

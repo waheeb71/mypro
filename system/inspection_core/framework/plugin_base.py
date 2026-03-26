@@ -1,9 +1,9 @@
 """
-Enterprise NGFW v2.0 - Inspector Plugin Base
+Enterprise CyberNexus v2.0 - Inspector Plugin Base
 
 Abstract base class for all inspection plugins.
 
-Author: Enterprise NGFW Team
+Author: Enterprise CyberNexus Team
 License: Proprietary
 """
 

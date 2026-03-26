@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - Reputation Engine
+Enterprise CyberNexus v2.0 - Reputation Engine
 IP and domain reputation scoring system.
 """
 

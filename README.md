@@ -1,10 +1,10 @@
-# 🛡️ Enterprise NGFW (Next-Generation Firewall) 🚀
+# 🛡️ Enterprise CyberNexus (Next-Generation Firewall) 🚀
 
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Status](https://img.shields.io/badge/status-Enterprise%20Ready-success)
 ![AI Layer](https://img.shields.io/badge/AI_Defense-7_Layers-blueviolet)
 
-نظام أمان شبكات مؤسسي متكامل ومتقدم (Enterprise NGFW) مبني بلغة Python. تم تصميمه من الصفر لينافس حلول جدران الحماية الرائدة عبر دمج **7 طبقات من الذكاء الاصطناعي**، نظام فحص ذكي للبيانات (DLP/WAF)، توجيه حركة المرور، وفلترة eBPF، مع دعم كامل للـ High Availability.
+نظام أمان شبكات مؤسسي متكامل ومتقدم (Enterprise CyberNexus) مبني بلغة Python. تم تصميمه من الصفر لينافس حلول جدران الحماية الرائدة عبر دمج **7 طبقات من الذكاء الاصطناعي**، نظام فحص ذكي للبيانات (DLP/WAF)، توجيه حركة المرور، وفلترة eBPF، مع دعم كامل للـ High Availability.
 
 ---
 
@@ -43,8 +43,8 @@
 
 1. **نسخ المستودع وتثبيت البيئة الوهمية:**
    ```bash
-   git clone https://github.com/your-org/enterprise-ngfw.git
-   cd enterprise-ngfw
+   git clone https://github.com/your-org/enterprise-CyberNexus.git
+   cd enterprise-CyberNexus
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements/base.txt
@@ -58,29 +58,29 @@
 3. **إعدادات جدار الحماية:**
    قم بنسخ الإعدادات الافتراضية والتعديل عليها:
    ```bash
-   mkdir -p /etc/ngfw/certs
-   cp config/defaults/base.yaml /etc/ngfw/config.yaml
+   mkdir -p /etc/CyberNexus/certs
+   cp config/defaults/base.yaml /etc/CyberNexus/config.yaml
    ```
 
 4. **توليد شهادة الجذر (CA) لفحص HTTPS:**
    ```bash
-   python main.py --init-ca -c /etc/ngfw/config.yaml
+   python main.py --init-ca -c /etc/CyberNexus/config.yaml
    ```
 
 ---
 
-## 🚀 التشغيل (Running the NGFW)
+## 🚀 التشغيل (Running the CyberNexus)
 
 بمجرد الانتهاء من الإعداد، يمكنك تشغيل الجدار الناري كالتالي:
 
 ```bash
 # تشغيل بوضع الـ Root (مطلوب لخصائص eBPF والعمل على المنافذ < 1024)
-sudo python main.py -c /etc/ngfw/config.yaml
+sudo python main.py -c /etc/CyberNexus/config.yaml
 ```
 
 **ملاحظة:** تأكد من استخراج شهادة الـ Root CA وتثبيتها على أجهزة العملاء لضمان عمل الـ SSL Inspection بدون رسائل خطأ في المتصفح:
 ```bash
-python main.py --export-ca /tmp/root-ca.crt -c /etc/ngfw/config.yaml
+python main.py --export-ca /tmp/root-ca.crt -c /etc/CyberNexus/config.yaml
 ```
 
 ---

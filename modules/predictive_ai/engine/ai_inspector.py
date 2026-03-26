@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - AI Inspector Plugin
+Enterprise CyberNexus - AI Inspector Plugin
 
 Uses Deep Learning models to classify traffic patterns and detect anomalies.
 Integrates with the central DeepTrafficClassifier.

@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - High Availability (HA)
+Enterprise CyberNexus - High Availability (HA)
 
 Provides Active-Passive clustering capabilities.
 """

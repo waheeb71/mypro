@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — UBA User Profiler (Adaptive Baseline Engine)
+Enterprise CyberNexus — UBA User Profiler (Adaptive Baseline Engine)
 
 Central coordinator for the UBA pipeline:
 

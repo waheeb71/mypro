@@ -1,7 +1,7 @@
 """
-Enterprise NGFW — Firewall Inspector Plugin
+Enterprise CyberNexus — Firewall Inspector Plugin
 
-Bridges the NGFW inspection pipeline to the full firewall policy engine:
+Bridges the CyberNexus inspection pipeline to the full firewall policy engine:
   UnifiedEvaluator (GeoIP → ACL → App Control) + StateTracker
 
 Priority: HIGHEST — the firewall is the first line of defence.

@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - SIEM Integration
+Enterprise CyberNexus - SIEM Integration
 
 Connectors for Syslog, Elasticsearch, and Splunk.
 """

@@ -1,6 +1,6 @@
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - Events Module
+Enterprise CyberNexus - Events Module
 ═══════════════════════════════════════════════════════════════════
 
 Unified event collection and processing system.

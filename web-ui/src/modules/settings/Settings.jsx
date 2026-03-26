@@ -63,22 +63,22 @@ export default function Settings() {
     if (type === 'boolean') {
       return (
         <label className="settings-toggle">
-          <input 
-            type="checkbox" 
-            checked={val} 
-            onChange={(e) => handleValueChange(category, objKey, e.target.checked, 'boolean')} 
+          <input
+            type="checkbox"
+            checked={val}
+            onChange={(e) => handleValueChange(category, objKey, e.target.checked, 'boolean')}
             disabled={updateMutation.isPending}
           />
           <span className="slider"></span>
         </label>
       );
     }
-    
+
     if (type === 'number') {
       return (
-        <input 
-          type="number" 
-          defaultValue={val} 
+        <input
+          type="number"
+          defaultValue={val}
           onBlur={(e) => handleValueChange(category, objKey, e.target.value, 'number')}
           className="settings-input settings-number"
           disabled={updateMutation.isPending}
@@ -95,9 +95,9 @@ export default function Settings() {
     }
 
     return (
-      <input 
-        type="text" 
-        defaultValue={val} 
+      <input
+        type="text"
+        defaultValue={val}
         onBlur={(e) => handleValueChange(category, objKey, e.target.value, 'string')}
         className="settings-input"
         disabled={updateMutation.isPending}
@@ -107,14 +107,14 @@ export default function Settings() {
 
   const renderBlock = (category, sectionData) => {
     if (typeof sectionData !== 'object' || sectionData === null) return null;
-    
+
     return (
       <div className="settings-section" key={category}>
         <div className="settings-section-header" onClick={() => handleToggleExpand(category)}>
           <h3>{category.toUpperCase()}</h3>
           <span className="expand-indicator">{expandedSections[category] ? '▼' : '▶'}</span>
         </div>
-        
+
         {expandedSections[category] && (
           <div className="settings-section-body">
             {Object.entries(sectionData).map(([k, v]) => (
@@ -135,33 +135,33 @@ export default function Settings() {
     <div className="settings-page">
       <div className="settings-header">
         <h1>Configuration Center</h1>
-        <p>Manage raw configuration YAML files for the NGFW engine in real-time.</p>
+        <p>Manage raw configuration YAML files for the CyberNexus engine in real-time.</p>
       </div>
 
       <div className="settings-controls">
         <div className="file-tabs">
-          <div 
+          <div
             className={`file-tab ${activeFile === 'base.yaml' ? 'active' : ''}`}
             onClick={() => setActiveFile('base.yaml')}
           >
             <Server size={18} /> base.yaml
           </div>
-          <div 
+          <div
             className={`file-tab ${activeFile === 'phase2_3.yaml' ? 'active' : ''}`}
             onClick={() => setActiveFile('phase2_3.yaml')}
           >
             <Layers size={18} /> phase2_3.yaml
           </div>
-          <div 
+          <div
             className={`file-tab ${activeFile === 'sysctl-optimization.conf' ? 'active' : ''}`}
             onClick={() => setActiveFile('sysctl-optimization.conf')}
           >
             <Terminal size={18} /> sysctl (Kernel)
           </div>
         </div>
-        
-        <div className="settings-actions" style={{display: 'flex', gap: '8px'}}>
-          <button className="btn-refresh" onClick={handleReset} style={{ borderColor: 'var(--error-color)', color: 'var(--error-color)'}}>
+
+        <div className="settings-actions" style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn-refresh" onClick={handleReset} style={{ borderColor: 'var(--error-color)', color: 'var(--error-color)' }}>
             <RefreshCw size={16} /> Restore Default
           </button>
           <button className="btn-refresh" onClick={() => refetch()}>
@@ -173,7 +173,7 @@ export default function Settings() {
       <div className="settings-content">
         {config && Object.entries(config).map(([category, data]) => renderBlock(category, data))}
       </div>
-      
+
       {updateMutation.isPending && (
         <div className="saving-overlay">
           <span>Saving & Hot-reloading...</span>

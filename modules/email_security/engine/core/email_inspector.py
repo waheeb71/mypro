@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — AI-Powered Email Security Inspector
+Enterprise CyberNexus — AI-Powered Email Security Inspector
 
 Replaces and evolves the legacy `smtp_inspector.py` by routing all
 email protocol traffic through a multi-layer AI security pipeline.

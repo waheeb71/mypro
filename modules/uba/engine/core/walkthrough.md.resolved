@@ -2,10 +2,10 @@
 
 ## Files Modified / Created
 
-### 1. Database Model — [system/database/database.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/system/database/database.py)
-Added [EmailSecurityConfig](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/system/database/database.py#146-165) SQLAlchemy model with columns for every setting section ([enabled](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/email_security/engine/core/settings.py#182-185), [mode](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/email_security/engine/core/settings.py#186-191), `phishing`, `spam_filter`, [whitelist](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/email_security/api/router.py#242-253), etc.). The table is created automatically via `DatabaseManager.initialize()` → `Base.metadata.create_all()` at startup.
+### 1. Database Model — [system/database/database.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/system/database/database.py)
+Added [EmailSecurityConfig](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/system/database/database.py#146-165) SQLAlchemy model with columns for every setting section ([enabled](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/modules/email_security/engine/core/settings.py#182-185), [mode](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/modules/email_security/engine/core/settings.py#186-191), `phishing`, `spam_filter`, [whitelist](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/modules/email_security/api/router.py#242-253), etc.). The table is created automatically via `DatabaseManager.initialize()` → `Base.metadata.create_all()` at startup.
 
-### 2. API Router — [modules/email_security/api/router.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/email_security/api/router.py) _(Rewritten)_
+### 2. API Router — [modules/email_security/api/router.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/modules/email_security/api/router.py) _(Rewritten)_
 Full REST API for the email security module:
 
 | Method | Endpoint | Auth | Description |
@@ -18,16 +18,16 @@ Full REST API for the email security module:
 | `POST` | `/api/v1/email_security/whitelist` | admin | Add email/domain/IP |
 | `DELETE` | `/api/v1/email_security/whitelist/{type}/{value}` | admin | Remove entry |
 
-### 3. Engine Imports — [modules/email_security/engine/core/email_inspector.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/email_security/engine/core/email_inspector.py)
+### 3. Engine Imports — [modules/email_security/engine/core/email_inspector.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/modules/email_security/engine/core/email_inspector.py)
 Fixed broken relative imports (`.framework.plugin_base`, `.email.*`) to correct absolute paths:
 - `system.inspection_core.framework.plugin_base` — InspectorPlugin base
 - `modules.email_security.engine.core.settings` — EmailSettings
 - `modules.email_security.engine.scanners.*` — all 5 scanner modules
 
-### 4. Engine Package — [modules/email_security/engine/__init__.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/email_security/engine/__init__.py)
-Added [EmailInspectorPlugin](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/modules/email_security/engine/core/email_inspector.py#62-446) to imports and `__all__` so the package properly exports it.
+### 4. Engine Package — [modules/email_security/engine/__init__.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/modules/email_security/engine/__init__.py)
+Added [EmailInspectorPlugin](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/modules/email_security/engine/core/email_inspector.py#62-446) to imports and `__all__` so the package properly exports it.
 
-### 5. ModuleManager — [system/core/module_manager.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/system/core/module_manager.py)
+### 5. ModuleManager — [system/core/module_manager.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/system/core/module_manager.py)
 Added `email_security` to the `PLUGIN_REGISTRY`. To enable email inspection, set in `config.yaml`:
 ```yaml
 modules:
@@ -35,5 +35,5 @@ modules:
     enabled: true
 ```
 
-### 6. Alembic — [alembic/env.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/alembic/env.py)
-Imports `system.database.database` to ensure all models (including [EmailSecurityConfig](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_ngfw/system/database/database.py#146-165)) are registered in `Base.metadata` for Alembic autogenerate support.
+### 6. Alembic — [alembic/env.py](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/alembic/env.py)
+Imports `system.database.database` to ensure all models (including [EmailSecurityConfig](file:///M:/%D9%86%D8%B3%D8%AE%20%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9/enterprise_CyberNexus/system/database/database.py#146-165)) are registered in `Base.metadata` for Alembic autogenerate support.

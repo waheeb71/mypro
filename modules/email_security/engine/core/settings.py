@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Email Security Settings Loader
+Enterprise CyberNexus — Email Security Settings Loader
 
 Reads `config/defaults/email.yaml` and merges with `config/email.local.yaml`.
 Exposes typed settings for all email security layers.
@@ -123,7 +123,7 @@ class EmailLoggingSettings:
     log_blocked: bool = True
     log_quarantined: bool = True
     log_allowed: bool = False
-    log_file: str = "/var/log/ngfw/email_security.log"
+    log_file: str = "/var/log/CyberNexus/email_security.log"
     save_suspicious_content: bool = False
 
 

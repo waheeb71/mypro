@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - Threat Intelligence
+Enterprise CyberNexus v2.0 - Threat Intelligence
 
 Integration with threat intelligence feeds for real-time threat detection.
 
@@ -11,7 +11,7 @@ Features:
 - Automatic feed updates
 - IOC (Indicators of Compromise) matching
 
-Author: Enterprise NGFW Team
+Author: Enterprise CyberNexus Team
 License: Proprietary
 """
 

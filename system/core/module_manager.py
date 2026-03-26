@@ -6,7 +6,7 @@ from system.inspection_core.framework.pipeline import InspectionPipeline
 logger = logging.getLogger(__name__)
 
 class ModuleManager:
-    """ Reads config and dynamically loads enabled NGFW modules into the pipeline """
+    """ Reads config and dynamically loads enabled CyberNexus modules into the pipeline """
     
     # Mapping config keys to plugin import paths and classes
     PLUGIN_REGISTRY = {

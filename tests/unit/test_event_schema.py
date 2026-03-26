@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Enterprise NGFW - Unit Tests for Event Schema
+Enterprise CyberNexus - Unit Tests for Event Schema
 
 Tests for:
 - Schema validation

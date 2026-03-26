@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - Event Backend Base Class
+Enterprise CyberNexus - Event Backend Base Class
 ═══════════════════════════════════════════════════════════════════
 
 Abstract base class for event backends.

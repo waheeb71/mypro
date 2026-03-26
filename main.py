@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - Main Entry Point
+Enterprise CyberNexus - Main Entry Point
 ═══════════════════════════════════════════════════════════════════
 
 Author: Enterprise Security Team
@@ -29,13 +29,13 @@ from system.core.log_manager import setup_terminal_logging
 setup_terminal_logging()
 
 # Import the core engine
-from system.core.engine import NGFWApplication
+from system.core.engine import CyberNexusApplication
 from modules.ssl_inspection.engine.ca_pool import CAPoolManager
 
 def _print_banner(app):
     """Print startup banner"""
     if not app.config:
-        logger.info("  🔥 Enterprise NGFW starting with default configuration")
+        logger.info("  🔥 Enterprise CyberNexus starting with default configuration")
         return
         
     proxy_config = app.config.get('proxy', {})
@@ -45,7 +45,7 @@ def _print_banner(app):
     
     logger.info("")
     logger.info("╔═══════════════════════════════════════════════════════════════════╗")
-    logger.info("║         🔥 Enterprise NGFW - Successfully Started                ║")
+    logger.info("║         🔥 Enterprise CyberNexus - Successfully Started                ║")
     logger.info("╚═══════════════════════════════════════════════════════════════════╝")
     logger.info("")
     logger.info(f"  📡 Forward Proxy:  {proxy_config.get('forward_listen_host', '0.0.0.0')}:{proxy_config.get('forward_listen_port', 8080)}")
@@ -61,7 +61,7 @@ def _print_banner(app):
     logger.info("")
 
 async def async_main():
-    parser = argparse.ArgumentParser(description='Enterprise NGFW - Next-Generation Firewall')
+    parser = argparse.ArgumentParser(description='Enterprise CyberNexus - Next-Generation Firewall')
     parser.add_argument('-c', '--config', type=Path, default=Path('system/config/base.yaml'), help='Configuration API Path')
     parser.add_argument('--init-ca', action='store_true', help='Initialize CA certificates and exit')
     parser.add_argument('--export-ca', type=Path, metavar='DIR', help='Export CA certificates for client installation and exit')
@@ -70,7 +70,7 @@ async def async_main():
     
     # Handle special operations
     if args.init_ca or args.export_ca:
-        app = NGFWApplication(args.config)
+        app = CyberNexusApplication(args.config)
         app.load_config()
         
         ca_manager = CAPoolManager(app.config)
@@ -82,7 +82,7 @@ async def async_main():
         return
     
     # Normal operation
-    app = NGFWApplication(args.config)
+    app = CyberNexusApplication(args.config)
     
     try:
         app.load_config()
@@ -92,8 +92,8 @@ async def async_main():
         from api.rest.main import app as api_app
         import uvicorn
         
-        # Pass NGFW instance to API
-        api_app.state.ngfw = app
+        # Pass CyberNexus instance to API
+        api_app.state.CyberNexus = app
         
         api_config = app.config.get('api', {})
         host = api_config.get('host', '0.0.0.0')

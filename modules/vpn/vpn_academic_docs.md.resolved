@@ -1,0 +1,210 @@
+# التوثيق الأكاديمي لوحدة الشبكة الافتراضية الخاصة (VPN Module)
+
+---
+
+## 1. مقدمة عن القسم (Introduction)
+
+### 1.1 تعريف القسم
+وحدة الشبكات الافتراضية الخاصة (VPN Hub) في هذا الجدار الناري المتقدم (CyberNexus) هي طبقة برمجية وسيطة صُممت لإنشاء وإدارة قنوات اتصال مشفرة (Encrypted Tunnels) تعتمد بشكل أساسي وعصري على بروتوكول **WireGuard**. بفضل تبادل مفاتيح Ed25519، تُعتبر هذه الوحدة بديلاً حديثاً وآمناً لبروتوكولات IPSec و OpenVPN القديمة المعقدة.
+
+### 1.2 الهدف من القسم داخل المشروع
+تتمحور الغاية من إنشائه حول تمكين الوصول عن بُعد (Remote Access VPN) وتأمين ربط الفروع (Site-to-Site VPN) عبر تفعيل واجهة شبكية وهمية (`wg0`)، وإرساء جدار حماية قوي حول البيانات المتبادلة في بيئة الإنترنت غير الموثوقة.
+
+---
+
+## 2. دور هذه الوحدة (Module Responsibilities)
+
+### 2.1 الوظائف التي يقدمها (Core Functions)
+- **إدارة دورة حياة الاتصال**: تشغيل وإيقاف واجهات الشبكة (Interfaces) توليدياً.
+- **توليد المفاتيح المستقل (Key Management)**: إنشاء وتوزيع أزواج مفاتيح عامة/خاصة حديثة التشفير عبر منحنيات إهليلجية.
+- **إدارة النظراء (Peer Management)**: تتبع النظراء (العملاء)، تقييد وصولهم لعناوين IP محددة (Allowed-IPs)، وتنظيم إعدادات بقاء الاتصال (Keepalive).
+- **واجهات برمجية RESTful**: تقديم أدوات الـ (API) التفاعلية لدمج أوامر الشبكة مباشرة مع اللوحة الأمامية للمسؤول دون اللجوء لسجل الأوامر (Terminal).
+
+### 2.2 المشاكل التي يحلها (Problems Solved)
+- **بطء بروتوكولات التشفير الكلاسيكية**: نظراً لصغر حجم شيفرة WireGuard واعتماده المباشر في نواة نظام التشغيل، يقلل الوحدة بشكل حاسم من زمن الاستجابة (Latency) واستهلاك المعالج.
+- **تعقيد إعدادات IPSec**: تم استبدال آلاف السطور من شهادات التفويض المعقدة بنموذج "مفتاح عام - مفتاح خاص" بسيط وصارم.
+
+---
+
+## 3. الإعدادات والتكوين (Configuration)
+
+تُدار الإعدادات بتناغم بين ملف الدخول [settings.yaml](file:///F:/enterprise_CyberNexus/modules/vpn/config/settings.yaml) والبيانات المحفوظة في قاعدة البيانات لاستردادها عند الإقلاع (Persistence).
+
+### 3.1 شرح الإعدادات المستخدمة
+- **`mode: strict`**: عند تنشيط بيئة الـ VPN بهذا الوضع، يتم التشدد في التوثيق؛ فإضافة إلى عنوان الـ IP المسموح (Allowed IPs)، يُفرَض التشفير التشاركي الصارم (`preshared_key`) لمنع الحواسيب الكمومية والتدخلات المتوسطة من اعتراض التفاوض التشفيري. 
+- **`interface: "wg0"` و `listen_port: 51820`**: قيم معيارية تُسهل من عمليات إعادة التوجيه الفوري في الجدران النارية الخارجية (NAT Tunneling).
+- **`mtu: 1420`**: حُددت لضمان عدم تجزئة الحزم الشبكية (Fragmentation) أثناء كبسلة البيانات داخل الحيز المحدود للبروتوكول.
+
+---
+
+## 4. آلية العمل (Workflow)
+
+تتم المعالجة باستراتيجية الإدارة من التجريد العالي إلى التجريد المنخفض (Top-Down Abstraction):
+
+### مخطط التدفق التوصيفي (Workflow Representation):
+
+```mermaid
+graph TD
+    classDef api fill:#4a4e69,stroke:#9a8c98,color:#fff,rx:8,ry:8;
+    classDef logic fill:#22223b,stroke:#c9ada7,color:#fff,rx:8,ry:8;
+    classDef db fill:#003049,stroke:#d62828,color:#fff,rx:8,ry:8;
+    classDef os fill:#118ab2,stroke:#06d6a0,color:#fff,rx:8,ry:8;
+
+    A[API Request<br>إضافة مستخدم]:::api --> B[VPN Router<br>v1/vpn/peers]:::logic
+    
+    B --> C{التحقق من الصلاحيات<br>RBAC Token}:::logic
+    C -- فاشل --> Deny[403 Forbidden]:::api
+    C -- ناجح --> D[محرك مدير شبكة VPN<br>WireGuardManager]:::logic
+    
+    D --> E[حقن أوامر النظام<br>wg set wg0 ...]:::os
+    E -.-> E1[بناء واجهة الشبكية<br>OS Layer]:::os
+    
+    E -- نجاح التوجيه الشبكي --> F[قاعدة بيانات SQLite<br>SQLAlchemy]:::db
+    F -.-> F1[حفظ بيانات الـ Peer<br>Persistence]:::db
+    
+    F --> G[تأكيد نجاح العملية<br>201 CREATED]:::api
+```
+
+### تفصيل الخطوات:
+1. **الاستقبال والتأكيد**: يتم استدعاء مسار الـ API المرتبط، كـ `/api/v1/vpn/start`.
+2. **استخراج معلومات التكوين (DB Sync)**: يتم جلب الـ [VPNConfig](file:///F:/enterprise_CyberNexus/modules/vpn/api/router.py#42-49) من قاعدة البيانات لبناء الواجهة الافتراضية بنفس خصائص الإقلاع السابق.
+3. **تنفيذ الأوامر الشبكية**: يقوم [WireGuardManager](file:///F:/enterprise_CyberNexus/modules/vpn/engine/wireguard.py#24-181) الذي يستعمل فئة فرعية `subprocess` بالتدخل وإجراء أوامر مثل `ip link add` و `wg set`. 
+4. **تثبيت النظراء (Peers Sync)**: تُحقن كل مفاتيح المستخدمين المصرح لهم (أجهزة اللاب توب، الخوادم) وتخصص الحصص لهم في الذاكرة الحية.
+
+---
+
+## 5. هيكل المشروع (File Structure)
+
+تم تصميم الوحدة بهيكلية ثلاثية الطبقات (3-Tier Architecture) للعزل بين الاتصال، والمنطق، وقاعدة البيانات.
+
+```text
+modules/vpn/
+├── config/                 
+│   └── settings.yaml       # المفاتيح التبديلية الأساسية
+├── api/                    
+│   └── router.py           # واجهات التواصل مع المستخدم الخارجي (REST)
+├── engine/                 
+│   └── wireguard.py        # المحرك الفعلي ومترجم الأوامر لنظام التشغيل
+├── models/                 
+│   └── __init__.py         # نماذج قواعد البيانات (يتم الرجوع للكيان المركزي)
+└── policy/                 
+    └── vpn/
+        ├── auth.py         # سياسات التحقق وتخويل الدخول (تحت التطوير)
+        └── portal.py       # بوابة التوثيق Captive Portal (تحت التطوير)
+```
+
+**شرح الأهمية التنظيمية:** 
+- مجلد `engine/` يحتوي على الشيفرات الحذرة جداً التي تدير سياق النظام المضيف، بينما يعزل مجلد [api/](file:///F:/enterprise_CyberNexus/modules/waf/api/router.py#402-417) أمان النظام عن تهديدات الويب.
+
+---
+
+## 6. النماذج والأبنية البيانية (Models & Data Structures)
+
+يقوم المحرك بترميز مفاهيم الشبكة عبر هياكل برمجية صارمة، كما يتضح في المخطط الهيكلي التالي للبيانات:
+
+```mermaid
+classDiagram
+    direction TB
+    
+    class VPNPeerRequest {
+        <<Pydantic Model - API Layer>>
+        +String name
+        +String public_key
+        +List allowed_ips
+        +String endpoint
+        +String preshared_key
+    }
+    
+    class PeerConfig {
+        <<Dataclass - Engine Layer>>
+        +String public_key
+        +List allowed_ips
+        +String endpoint
+        +String preshared_key
+        +Int persistent_keepalive
+    }
+    
+    class VPNPeer {
+        <<SQLAlchemy DB - Persistence Layer>>
+        +Integer id
+        +String name
+        +String public_key
+        +String allowed_ips
+        +Boolean enabled
+    }
+    
+    class VPNConfig {
+        <<SQLAlchemy DB - Persistence Layer>>
+        +Boolean enabled
+        +String interface
+        +Int listen_port
+        +String server_ip
+        +String dns
+    }
+    
+    %% مسار تدفق البيانات والعلاقات
+    VPNPeerRequest ..> PeerConfig : يُحول بعد تدقيق الـ (Validation)
+    PeerConfig ..> VPNPeer : يُحفظ في الذاكرة الدائمة عبر DB Session
+```
+
+1. **كائن [PeerConfig](file:///F:/enterprise_CyberNexus/modules/vpn/engine/wireguard.py#16-23) (Dataclass)**:
+   يمثل الكيان المنطقي لأي طرف عميل.
+   - الحقول الأساسية: `public_key`، `allowed_ips`، `endpoint`.
+2. **كائن [VPNPeerRequest](file:///F:/enterprise_CyberNexus/modules/vpn/api/router.py#34-41) (Pydantic Model)**:
+   نموذج للتحقق من سلامة المدخلات (Data Validation) عبر الـ API قبل معالجتها، يمنع حقن نصوص منسقة خبيثة تتسبب بكسر الأوامر النصية على موجه لينكس.
+3. **النموذج التخزيني [VPNConfig](file:///F:/enterprise_CyberNexus/modules/vpn/api/router.py#42-49) و [VPNPeer](file:///F:/enterprise_CyberNexus/modules/vpn/api/router.py#34-41)**:
+   جداول مساعدة عبر الجلسات المترابطة `SQLAlchemy` تتيح حفظ إعدادات الـ Interface وخصائص العملاء لتتمكن الخدمات من استردادها والإقلاع المستقر حتى وإن تمت إعادة التشغيل.
+
+---
+
+## 7. التكامل مع باقی الوحدات (Integration)
+
+تتفاعل طبقة الـ VPN بسلاسة مع البنية المركزية لـ CyberNexus:
+- **نظام الحماية (RBAC)**: تتطلب جميع مسارات التحكم بصلاحيات عُليا وتعتمد على موجه `api.rest.auth` و `require_admin`.
+- **قواعد البيانات (Database)**: تعتمد الوحدة مباشرةً على الجلسات `Session` الخاصة بمدير قاعدة البيانات الرئيسي في النظام (`system.database.database`).
+- **تهيئة التشغيل الآلي (Lazy Initialization)**: يقوم نظام الـ WAF والأدوات الأخرى بجلب خصائص الجدار الناري والتخاطب معه لتوثيق اتصالات الـ VPN أو حظرها.
+
+---
+
+## 8. الإعدادات المستخدمة (Mode: Strict)
+
+على الرغم من أن التشغيل المبدئي قد يكون على هيئة استكشاف، إلا أن معيار `Strict` يتدخل ليقود العمليات نحو أعلى معايير الأمان (Zero Trust Framework). في هذا الوضع الإجباري:
+- يُمنع كلياً إنشاء اتصال لا يوفر المفتاح التشاركي الثنائي (`preshared_key` Enforcement).
+- يُجبر الخادم على إغلاق البورت (Drop Silent) تجاه أي حزمة غير مخولة مسبقاً تشفيرياً بدلاً من إرجاع رسائل (ICMP).
+
+---
+
+## 9. الاختبارات العملية والتحليلات (Testing)
+
+لإجراء تقييم شامل، يجري تنفيذ مجموعة اختبارات استقرائية:
+
+### السيناريو العملي: توليد المفاتيح وربط عميل جديد
+1. أُرسلت حمولة (JSON payload) صحيحة لنهاية الاستجابة `/api/v1/vpn/peers` متضمنة `public_key` ومجال `allowed_ips`.
+2. حُقن الطلب بنجاح ونفذ المحرك الداخلي الأمر `wg set wg0 peer ...`.
+3. تم العثور على القيود في واجهة فحص النظام.
+
+`[🖼️ مساحة لقطة الشاشة 1: توثيق أداة أوامر النظام التي تظهر استجابة الأمر (wg show wg0)، مبينةً اتصال Peer حي بنجاح ونقله لبعض الكيلوبايتات (Transfer Bytes)]`
+
+**تحليل الاختبار:** يؤكد اجتياز التجربة استقرار غلاف (Python subprocess) في التفاهم السلس مع ثنائيات لينكس المجمعة بشكل تام، وقابلية الـ API للرد اللحظي باستجابة `201 Created`.
+
+---
+
+## 10. التحديات والحلول (Challenges & Solutions)
+
+- **التحدي الأول: فقدان التكوين عند إعادة التشغيل (Stateless Configs)**
+  - كانت بيئة WireGuard تُنسى بمجرد سقوط الواجهة `wg0`.
+  - **الحل**: أُدمجت الوحدة بقاعدة البيانات SQLAlchemy لتسجيل دقيق، وأضيف روتين تشغيل دوري لاستحضارها تلقائياً.
+- **التحدي الثاني: معالجة الأخطاء من موجهات النظام (Subprocess Errors)**
+  - عندما يرفض النظام الأوامر، كان السكربت ينهار (Fatal Crash).
+  - **الحل**: أضيف مُغلف آمن ([_run_cmd](file:///F:/enterprise_CyberNexus/modules/vpn/engine/wireguard.py#34-50)) يشتمل على كتل (Traceback / Try-Catch) تقوم بتسجيل الخطأ بشكل لبق واستمرار الخدمة دون انهيار الجدار الناري.
+
+---
+
+## 11. الخلاصة والاقتراحات المستقبلية (Conclusion)
+
+لقد نجح المهندسون في بناء بنية تحتية صلبة ومرنة للشبكات الافتراضية الخاصة، ترفع الحمل عن أكتاف المستخدم وتعيده إلى نظام موثّق وواجهة برمجة تطبيقات نظيفة ومتكاملة. 
+
+**اقتراحات تطوير مستقبلية:**
+1. إنجاز بوابات المصادقة المعلقة في [policy/vpn/portal.py](file:///F:/enterprise_CyberNexus/modules/vpn/policy/vpn/portal.py) عبر تفعيل الربط بخدمات `Active Directory` / `LDAP`.
+2. إضافة ميزة استخراج ملفات `WireGuard Configuration (*.conf)` أو توليد رموز الاستجابة السريعة (`QR Codes`) للعملاء لتسهيل الارتباط بالأجهزة المحمولة.
+3. التوسع في تطبيق نظام منع التطفل الشبكي (IPS) ليفحص بشكل استثنائي الرزم المارة داخل نفق الـ `wg0`.

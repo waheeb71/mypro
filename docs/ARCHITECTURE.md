@@ -1,8 +1,8 @@
-# Enterprise NGFW - System Architecture
+# Enterprise CyberNexus - System Architecture
 
 ## 📐 Architecture Overview
 
-Enterprise NGFW implements a **hybrid architecture** combining kernel-level packet filtering with user-space deep inspection, providing both performance and flexibility.
+Enterprise CyberNexus implements a **hybrid architecture** combining kernel-level packet filtering with user-space deep inspection, providing both performance and flexibility.
 
 ---
 
@@ -244,7 +244,7 @@ EventSchema:
 
 #### Transparent Proxy
 ```
-Client → [NGFW as gateway] → Internet
+Client → [CyberNexus as gateway] → Internet
          (intercepts traffic)
 ```
 - Zero client configuration
@@ -253,7 +253,7 @@ Client → [NGFW as gateway] → Internet
 
 #### Forward Proxy
 ```
-Client → [Explicit proxy config] → NGFW → Internet
+Client → [Explicit proxy config] → CyberNexus → Internet
 ```
 - Requires client configuration
 - Supports authentication
@@ -261,7 +261,7 @@ Client → [Explicit proxy config] → NGFW → Internet
 
 #### Reverse Proxy
 ```
-Internet → NGFW → Backend Servers
+Internet → CyberNexus → Backend Servers
           (protects servers)
 ```
 - Load balancing
@@ -506,7 +506,7 @@ Health Checker ─┬→ Event Sink health
 ## 🔧 Scalability Considerations
 
 ### Horizontal Scaling
-- **Multiple NGFW Instances**: Deploy behind load balancer
+- **Multiple CyberNexus Instances**: Deploy behind load balancer
 - **Shared Backend**: Use database/streaming backend for centralized events
 - **Distributed TTL**: Use Redis for shared TTL state
 

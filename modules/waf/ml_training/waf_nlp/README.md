@@ -17,7 +17,7 @@
 ### أوامر تشغيل التدريب:
 لتدريب النموذج أو تحديثه بعد إضافة قواعد جديدة:
 ```bash
-cd M:\نسخ المشروع\enterprise_ngfw
+cd M:\نسخ المشروع\enterprise_CyberNexus
 python -m modules.waf.ml_training.waf_nlp.train
 ```
 

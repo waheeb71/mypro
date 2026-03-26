@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — WAF Shadow Autopilot (Zero-Trust Schema Generator)
+Enterprise CyberNexus — WAF Shadow Autopilot (Zero-Trust Schema Generator)
 
 When enabled, it silently observes HTTP traffic to build a structural profile
 of the backend application. It learns what headers, parameters, methods, and

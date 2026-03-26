@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Reinforcement Learning Policy Optimizer
+Enterprise CyberNexus - Reinforcement Learning Policy Optimizer
 
 Uses a pre-trained Q-Learning Q-Table to determine the optimal
 auto-response policy (Rate Limiting / Block) based on threat level.

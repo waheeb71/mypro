@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - OTA Update & System Management Endpoints  (Admin only)
+Enterprise CyberNexus - OTA Update & System Management Endpoints  (Admin only)
 GET  /api/v1/system/update/check    — Check GitHub for available updates
 POST /api/v1/system/update/apply    — Apply update from GitHub + restart
 GET  /api/v1/system/update/history  — Tail the latest update log
@@ -20,9 +20,9 @@ from api.rest.auth import require_admin
 router = APIRouter(prefix="/api/v1/system/update", tags=["OTA Updates"])
 logger = logging.getLogger(__name__)
 
-REPO_URL = os.getenv("NGFW_REPO_URL", "https://github.com/waheeb71/enterprise-ngfw")
-INSTALL_DIR = os.getenv("NGFW_HOME", "/opt/enterprise_ngfw")
-UPDATE_LOG_DIR = Path("/var/log/ngfw")
+REPO_URL = os.getenv("CyberNexus_REPO_URL", "https://github.com/waheeb71/enterprise-CyberNexus")
+INSTALL_DIR = os.getenv("CyberNexus_HOME", "/opt/enterprise_CyberNexus")
+UPDATE_LOG_DIR = Path("/var/log/CyberNexus")
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ UPDATE_LOG_DIR = Path("/var/log/ngfw")
 class ApplyUpdateRequest(BaseModel):
     branch: str = Field("main", description="Branch / tag to pull")
     run_migrations: bool = Field(True, description="Run Alembic migrations after pull")
-    restart_service: bool = Field(True, description="Restart ngfw systemd service after update")
+    restart_service: bool = Field(True, description="Restart CyberNexus systemd service after update")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -172,10 +172,10 @@ async def apply_update(
 
             # Restart service
             if payload.restart_service:
-                log("🔄 Restarting ngfw service...")
+                log("🔄 Restarting CyberNexus service...")
                 import time
                 time.sleep(2)
-                subprocess.run(["systemctl", "restart", "ngfw"])
+                subprocess.run(["systemctl", "restart", "CyberNexus"])
 
             log("🎉 OTA update completed successfully.")
 

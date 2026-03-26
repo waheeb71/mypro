@@ -112,7 +112,7 @@ security:
   strict_cert_validation: true
 logging:
   level: INFO
-  file: logs/ngfw.log
+  file: logs/CyberNexus.log
   max_bytes: 104857600
   backup_count: 10
   flow_log_enabled: true
@@ -156,10 +156,10 @@ integration:
     socket_path: suricata.socket
 ml:
   enabled: true
-  deep_model_path: "m:/��� �������/enterprise_ngfw/models/deep_classifier.onnx"
+  deep_model_path: "m:/��� �������/enterprise_CyberNexus/models/deep_classifier.onnx"
   anomaly_detection:
     enabled: true
-    model_path: "m:/��� �������/enterprise_ngfw/models/anomaly_detector.onnx"
+    model_path: "m:/��� �������/enterprise_CyberNexus/models/anomaly_detector.onnx"
     threshold: 0.85
   traffic_profiling:
     enabled: true

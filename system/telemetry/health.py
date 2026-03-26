@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ═══════════════════════════════════════════════════════════════════
-Enterprise NGFW - Health Checker
+Enterprise CyberNexus - Health Checker
 ═══════════════════════════════════════════════════════════════════
 
 System health monitoring and status checking.
@@ -59,20 +59,20 @@ class ComponentHealth:
 
 class HealthChecker:
     """
-    System health checker for Enterprise NGFW
+    System health checker for Enterprise CyberNexus
     
     Monitors health of all components and provides
     readiness and liveness probes.
     """
     
-    def __init__(self, ngfw_app):
+    def __init__(self, CyberNexus_app):
         """
         Initialize health checker
         
         Args:
-            ngfw_app: Main NGFWApplication instance
+            CyberNexus_app: Main CyberNexusApplication instance
         """
-        self.app = ngfw_app
+        self.app = CyberNexus_app
         self.logger = logger
         
         # Component health cache

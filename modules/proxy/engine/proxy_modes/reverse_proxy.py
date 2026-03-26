@@ -62,8 +62,8 @@ class ReverseProxy(BaseProxy):
         context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         
         # Load server certificate
-        cert_file = tls_config.get('server_cert', '/etc/ngfw/certs/server.crt')
-        key_file = tls_config.get('server_key', '/etc/ngfw/certs/server.key')
+        cert_file = tls_config.get('server_cert', '/etc/CyberNexus/certs/server.crt')
+        key_file = tls_config.get('server_key', '/etc/CyberNexus/certs/server.key')
         
         try:
             context.load_cert_chain(cert_file, key_file)
@@ -105,8 +105,8 @@ class ReverseProxy(BaseProxy):
         
         # Generate cert
         subject = issuer = x509.Name([
-            x509.NameAttribute(NameOID.COMMON_NAME, "NGFW Reverse Proxy"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Enterprise NGFW"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "CyberNexus Reverse Proxy"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Enterprise CyberNexus"),
         ])
         
         cert = (

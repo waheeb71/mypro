@@ -1,6 +1,6 @@
 # 🧪 Lab Setup Guide: Kali Linux Firewall
 
-This guide explains how to set up **Enterprise NGFW** on a **Kali Linux** machine acting as a gateway/firewall between an **Attacker** and a **Target Server**, without using Docker.
+This guide explains how to set up **Enterprise CyberNexus** on a **Kali Linux** machine acting as a gateway/firewall between an **Attacker** and a **Target Server**, without using Docker.
 
 ## 📐 Network Topology
 
@@ -40,9 +40,9 @@ sudo apt install -y python3-pip python3-venv build-essential libpcap-dev libssl-
 Copy the project to Kali (using git or drag-and-drop):
 ```bash
 cd /opt
-sudo git clone https://your-repo/enterprise_ngfw.git
-sudo chown -R kali:kali enterprise_ngfw
-cd enterprise_ngfw
+sudo git clone https://your-repo/enterprise_CyberNexus.git
+sudo chown -R kali:kali enterprise_CyberNexus
+cd enterprise_CyberNexus
 ```
 
 ### 3. Setup Python Environment
@@ -58,7 +58,7 @@ pip install -r requirements/phase2_3.txt  # If exists
 ```bash
 cp .env.example .env
 nano .env
-# Set NGFW_SECRET_KEY, NGFW_ADMIN_PASSWORD, etc.
+# Set CyberNexus_SECRET_KEY, CyberNexus_ADMIN_PASSWORD, etc.
 ```
 
 ---
@@ -79,8 +79,8 @@ Allow Attacker to reach the Internet/Server through Kali:
 sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 ```
 
-### 3. Redirect Traffic to NGFW (Transparent Proxy)
-Intercept HTTP (80) and HTTPS (443) traffic and send it to NGFW listening on port **8443**:
+### 3. Redirect Traffic to CyberNexus (Transparent Proxy)
+Intercept HTTP (80) and HTTPS (443) traffic and send it to CyberNexus listening on port **8443**:
 
 ```bash
 # Redirect HTTP
@@ -107,7 +107,7 @@ sudo venv/bin/python main.py
 ### 2. Start the Dashboard (Optional)
 Open a new terminal:
 ```bash
-cd /opt/enterprise_ngfw/api/dashboard
+cd /opt/enterprise_CyberNexus/api/dashboard
 python3 -m http.server 8080
 ```
 
@@ -140,5 +140,5 @@ python3 -m http.server 8080
 - Ensure NAT Masquerade rule is active.
 
 ### "SSL Errors"
-- Since this is a transparent proxy, the Attacker will see a "Self-Signed Certificate" warning because the NGFW is intercepting HTTPS.
-- To fix this, import the NGFW's Root CA certificate into the Attacker's browser/OS trust store.
+- Since this is a transparent proxy, the Attacker will see a "Self-Signed Certificate" warning because the CyberNexus is intercepting HTTPS.
+- To fix this, import the CyberNexus's Root CA certificate into the Attacker's browser/OS trust store.

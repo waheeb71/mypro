@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Email Risk Scoring Engine
+Enterprise CyberNexus — Email Risk Scoring Engine
 
 Aggregates scores from all email detection modules into a
 single risk score and maps it to a policy decision.

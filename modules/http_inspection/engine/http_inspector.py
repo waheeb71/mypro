@@ -1,5 +1,5 @@
 """
-Enterprise NGFW v2.0 - HTTP Inspector Plugin
+Enterprise CyberNexus v2.0 - HTTP Inspector Plugin
 
 Deep inspection of HTTP/HTTPS traffic.
 

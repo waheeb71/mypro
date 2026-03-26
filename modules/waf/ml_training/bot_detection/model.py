@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — Bot Detection Model (XGBoost)
+Enterprise CyberNexus — Bot Detection Model (XGBoost)
 
 Classifies HTTP sessions into:
   0 = legitimate_user

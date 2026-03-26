@@ -1,5 +1,5 @@
 """
-Enterprise NGFW - Predictive Analytics
+Enterprise CyberNexus - Predictive Analytics
 
 Provides attack forecasting and trend analysis using
 a trained Random Forest Regressor time-series model.

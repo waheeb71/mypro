@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════
-#  Enterprise NGFW — AI Email Security Configuration
+#  Enterprise CyberNexus — AI Email Security Configuration
 #  File: config/defaults/email.yaml
 #
 #  تحكم كامل في كل ميزة من ميزات فحص البريد الإلكتروني
@@ -184,7 +184,7 @@ email_security:
     log_blocked:     true
     log_quarantined: true
     log_allowed:     false
-    log_file: "/var/log/ngfw/email_security.log"
+    log_file: "/var/log/CyberNexus/email_security.log"
     # هل تُحفظ نسخة من محتوى الرسائل المريبة؟
     save_suspicious_content: false   # ⚠️ انتبه للخصوصية
 

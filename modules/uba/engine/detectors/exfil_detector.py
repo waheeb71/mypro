@@ -1,5 +1,5 @@
 """
-Enterprise NGFW — UBA Data Exfiltration Detector
+Enterprise CyberNexus — UBA Data Exfiltration Detector
 
 Flags abnormally large data transfers compared to the user's rolling baseline.
 Uses the 2-sigma rule: bytes > avg + 2*stddev → suspicious.
