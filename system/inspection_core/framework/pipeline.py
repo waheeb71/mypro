@@ -14,9 +14,40 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 import threading
 
-from .plugin_base import InspectorPlugin, InspectionContext, InspectionFinding, InspectionResult, InspectionAction
+from .plugin_base import InspectorPlugin, InspectionContext, InspectionFinding, InspectionResult, InspectionAction, AbstractEnricher
 
+# ── Phase 7A: Event Bus (lazy import — zero overhead when disabled) ─────
+_bus_ready = False
+_event_bus = None
 
+def _get_bus():
+    """Lazy singleton: bus is only created if event_bus.enabled=true."""
+    global _bus_ready, _event_bus
+    if not _bus_ready:
+        try:
+            from system.config.feature_flags import FeatureFlagManager
+            if FeatureFlagManager.instance().current.event_bus.enabled:
+                import asyncio
+                loop = asyncio.get_event_loop()
+                if not loop.is_closed():
+                    from system.events.bus import EventBus
+                    _event_bus = loop.run_until_complete(EventBus.instance())
+        except Exception:
+            pass
+        _bus_ready = True
+    return _event_bus
+
+def _emit(topic: str, payload: dict) -> None:
+    """Best-effort event emit — never raises, never blocks the pipeline."""
+    try:
+        bus = _get_bus()
+        if bus is not None:
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if not loop.is_closed():
+                loop.create_task(bus.publish(topic, payload))
+    except Exception:
+        pass
 
 class InspectionPipeline:
     """
@@ -36,6 +67,9 @@ class InspectionPipeline:
         self._plugins: List[InspectorPlugin] = []
         self._plugins_by_name: Dict[str, InspectorPlugin] = {}
         
+        # Enricher registry (Pre-flight Identity & Risk injectors)
+        self._enrichers: List[AbstractEnricher] = []
+        
         # Configuration
         self._fail_open = False  # Fail open (allow) or fail closed (block)
         self._max_processing_time_ms = 1000  # Max time per inspection
@@ -49,6 +83,12 @@ class InspectionPipeline:
         self._lock = threading.RLock()
         
         self.logger.info("Inspection pipeline initialized")
+
+    def register_enricher(self, enricher: AbstractEnricher) -> None:
+        """Register a Context Enricher to run before plugins."""
+        with self._lock:
+            self._enrichers.append(enricher)
+            self.logger.info(f"Registered Context Enricher: {enricher.name}")
         
     def register_plugin(self, plugin: InspectorPlugin) -> None:
         """
@@ -114,7 +154,34 @@ class InspectionPipeline:
         result = InspectionResult(action=InspectionAction.ALLOW)
         
         try:
-            # Execute plugins in priority order
+            # ── Phase 0: Threat Intel Check (Fail Fast) ───────────────────────
+            # Blocks known malicious IPs before wasting CPU on DPI/Enrichment
+            from system.threat_intel.intel_manager import ThreatIntelManager
+            try:
+                if ThreatIntelManager.instance().is_ip_blocked(context.src_ip):
+                    self.logger.warning(f"Blocked by Threat Intel: {context.src_ip}")
+                    result.action = InspectionAction.BLOCK
+                    result.findings.append(InspectionFinding(
+                        severity='CRITICAL',
+                        category='threat_intel',
+                        description='IP found in Threat Intelligence blocklist',
+                        plugin_name='threat_intel_manager',
+                        confidence=1.0
+                    ))
+                    # Record execution time and return immediately
+                    result.metadata['processing_time_ms'] = (time.time() - start_time) * 1000
+                    return result
+            except Exception as e:
+                self.logger.error(f"Threat Intel check failed: {e}")
+
+            # Phase 1: Context Enrichment (Zero Trust setup)
+            for enricher in self._enrichers:
+                try:
+                    enricher.enrich(context)
+                except Exception as e:
+                    self.logger.error(f"Enricher {enricher.name} failed: {e}")
+
+            # Phase 2: Execute plugins in priority order
             for plugin in self._plugins:
                 if not plugin.enabled:
                     continue
@@ -151,6 +218,22 @@ class InspectionPipeline:
                         plugin._detected_count += 1
                     if plugin_result.is_blocked:
                         plugin._blocked_count += 1
+
+                    # ── Phase 7A: Emit event per plugin result ────────────────────
+                    _emit("packet.inspected", {
+                        "module": plugin.name,
+                        "action": plugin_result.action.name,
+                        "score": getattr(plugin_result, 'confidence', 0.0),
+                        "src_ip": getattr(context, 'src_ip', ''),
+                        "session_id": getattr(context, 'session_id', ''),
+                    })
+                    if plugin_result.is_blocked:
+                        _emit("threat.detected", {
+                            "module": plugin.name,
+                            "src_ip": getattr(context, 'src_ip', ''),
+                            "session_id": getattr(context, 'session_id', ''),
+                            "findings": len(plugin_result.findings),
+                        })
                         
                 except Exception as e:
                     self.logger.error(
@@ -218,6 +301,14 @@ class InspectionPipeline:
         result = InspectionResult(action=InspectionAction.ALLOW)
         
         try:
+            # Phase 1: Context Enrichment (Zero Trust setup)
+            for enricher in self._enrichers:
+                try:
+                    await enricher.enrich_async(context)
+                except Exception as e:
+                    self.logger.error(f"Async Enricher {enricher.name} failed: {e}")
+
+            # Phase 2: Execute plugins in priority order
             for plugin in self._plugins:
                 if not plugin.enabled or not plugin.can_inspect(context):
                     continue

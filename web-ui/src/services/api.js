@@ -240,3 +240,47 @@ export const emailApi = {
   addToWhitelist: (d) => api.post('/api/v1/email_security/whitelist', d),
   removeFromWhitelist: (type, val) => api.delete(`/api/v1/email_security/whitelist/${type}/${val}`),
 };
+
+/* ── System Core Relocated APIs ────────────────────── */
+export const mlCoreApi = {
+  config: () => api.get('/api/v1/ml-core/config'),
+  updateConfig: (d) => api.put('/api/v1/ml-core/config', d),
+};
+
+export const responseApi = {
+  blocks: () => api.get('/api/v1/response/blocks'),
+  unblock: (ip) => api.delete(`/api/v1/response/blocks/${encodeURIComponent(ip)}`),
+};
+
+export const haApi = {
+  status: () => api.get('/api/v1/ha/status'),
+  sync: () => api.post('/api/v1/ha/sync'),
+};
+
+export const interfacesApi = {
+  list: () => api.get('/api/v1/system/interfaces'),
+  assign: (d) => api.post('/api/v1/system/interfaces/assign', d),
+};
+
+export const certificatesApi = {
+  info: () => api.get('/api/v1/certificates/ca/info'),
+  generate: () => api.post('/api/v1/certificates/ca/generate'),
+  download: (format="pem") => api.get(`/api/v1/certificates/ca/download?format=${format}`, { responseType: 'blob' }), 
+};
+
+/* ── Phase 6: Smart Firewall Policy Optimizer ───────── */
+export const optimizerApi = {
+  analyze: () => api.get('/api/v1/optimizer/suggestions'),
+  apply: (deleteRuleIds) => api.post('/api/v1/optimizer/apply', { delete_rule_ids: deleteRuleIds }),
+};
+
+/* ── Phase 8: Enterprise Control Plane ─────────────── */
+export const enterpriseApi = {
+  // System Health & Circuit Breakers
+  healthDetailed: () => api.get('/api/v1/system/health/detailed'),
+  
+  // Config Manager v2 (Snapshots & Rollbacks)
+  configVersions: () => api.get('/api/v1/config/versions'),
+  configDiff: (v1, v2) => api.get('/api/v1/config/diff', { params: { v1, v2 } }),
+  configRollback: (version) => api.post('/api/v1/config/rollback', { target_version: version }),
+};

@@ -23,6 +23,8 @@ import Proxy         from './modules/proxy/Proxy';
 import WAF       from './modules/waf/WAF';
 import IDSIPS    from './modules/ids_ips/IDSIPS';
 import System    from './modules/system/System';
+import SystemHealth from './modules/system/SystemHealth';
+import ConfigManager from './modules/system/ConfigManager';
 import VPN       from './modules/vpn/VPN';
 import DNS       from './modules/dns_security/DNS';
 
@@ -75,6 +77,8 @@ export default function App() {
               <Route path="vpn"      element={<VPN />} />
               <Route path="dns"      element={<DNS />} />
               <Route path="system"   element={<System />} />
+              <Route path="system-health" element={<SystemHealth />} />
+              <Route path="config-manager" element={<ConfigManager />} />
               <Route path="settings" element={<Settings />} />
 
               {/* Catch-all */}

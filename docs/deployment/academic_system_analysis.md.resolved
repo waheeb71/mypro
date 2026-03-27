@@ -1,0 +1,798 @@
+# تحليل معماري متقدم — Enterprise CyberNexus NGFW
+## Production Blueprint — Fortinet / Palo Alto Class Architecture
+
+> **المستوى:** Enterprise Production-Grade Architecture
+> **المرجع:** Fortinet NGFW Architecture · Palo Alto PAN-OS Design Principles
+
+---
+
+## 1. 🧭 الفصل الأساسي: Control / Data / Intelligence Planes
+
+> [!IMPORTANT]
+> هذا الفصل هو **الركيزة الأولى** لأي NGFW حقيقي. بدونه النظام يصبح Monolith لا يمكن توسيعه.
+
+```mermaid
+graph TD
+    subgraph "🔵 Control Plane — العقل الإداري"
+        CP1["⚙️ Policy Engine\n(Rule Compiler)"]
+        CP2["🔌 Admin API\n(FastAPI / gRPC Gateway)"]
+        CP3["🔐 Auth & RBAC\n(IAM / JWT / SPIFFE)"]
+        CP4["📁 Config Manager\n(Versioned Config Store)"]
+        CP5["🏗️ Cluster Manager\n(Leader Election / Raft)"]
+    end
+
+    subgraph "🔴 Data Plane — معالجة الحزم السريعة"
+        DP1["⚡ eBPF/XDP Layer\n(Kernel-Level Filtering)"]
+        DP2["🔄 L4/L7 Proxy Engine\n(Zero-Copy Forwarding)"]
+        DP3["🔍 Stateful DPI Engine\n(Pipeline / Plugins)"]
+        DP4["📡 Connection Tracker\n(ConnTrack)"]
+        DP5["🔐 TLS Interception\n(Inline SSL Inspection)"]
+    end
+
+    subgraph "🟣 Intelligence Plane — الذكاء والتحليل"
+        IP1["🧠 ML Inference Engine\n(ONNX Runtime)"]
+        IP2["📊 Behavioral Analytics\n(UBA Engine)"]
+        IP3["🌐 Threat Correlation\n(Graph Engine)"]
+        IP4["🎯 Threat Scoring\n(Risk Aggregator)"]
+        IP5["📡 Threat Intel\n(AbuseIPDB / OTX)"]
+    end
+
+    subgraph "📊 Observability Plane"
+        OB1["📈 Prometheus\n(Metrics)"]
+        OB2["📝 Loki / ELK\n(Logs)"]
+        OB3["🔭 OpenTelemetry\n(Tracing)"]
+        OB4["📉 Grafana\n(Dashboards)"]
+    end
+
+    CP1 -->|"Compile Rules → Push"| DP1 & DP3
+    CP2 -->|"Admin Commands"| CP1 & CP4 & CP5
+    DP3 -->|"Events & Scores"| IP3 & IP2
+    IP1 & IP4 -->|"AI Decision"| DP3
+    DP1 & DP3 & IP1 -->|"Metrics / Traces / Logs"| OB1 & OB2 & OB3
+
+    EB["⚡ Event Bus\n(NATS / Kafka)"]
+    DP3 <-->|"Async Events"| EB
+    IP3 <-->|"Async Events"| EB
+    CP1 <-->|"Policy Updates"| EB
+```
+
+> [!NOTE]
+> **القاعدة الذهبية:** Control Plane لا يلمس الـ Traffic أبداً. Data Plane لا يتخذ قرارات Policy بنفسه. Intelligence Plane لا يوقف Traffic مباشرة — يُعطي فقط "قرارات" (Decisions) للـ Data Plane.
+
+---
+
+## 2. ⚡ Event Bus — العمود الفقري غير المتزامن
+
+> [!IMPORTANT]
+> بدون Event Bus النظام **Tightly Coupled** و **Non-Scalable**. كل استدعاء مباشر (Direct Call) يخلق تبعية صلبة بين المكونات.
+
+```mermaid
+graph LR
+    subgraph "Publishers (المُرسِلون)"
+        P1["🔍 DPI Engine"]
+        P2["🛡️ WAF Module"]
+        P3["🤖 AI Engine"]
+        P4["👤 UBA Engine"]
+        P5["⚡ eBPF Layer"]
+    end
+
+    subgraph "Event Bus — NATS / Kafka"
+        T1["📨 packet.inspected"]
+        T2["🚨 threat.detected"]
+        T3["📊 anomaly.scored"]
+        T4["🔒 policy.evaluated"]
+        T5["🌐 connection.established"]
+        T6["🩺 module.health"]
+    end
+
+    subgraph "Consumers (المُستَقبِلون)"
+        C1["🧠 Correlation Engine"]
+        C2["📊 SIEM Exporter"]
+        C3["📧 Alert System"]
+        C4["⚡ Response Orchestrator"]
+        C5["📈 Telemetry / Prometheus"]
+    end
+
+    P1 --> T1 & T4
+    P2 --> T2
+    P3 --> T3
+    P4 --> T3
+    P5 --> T5
+
+    T2 --> C1 & C3 & C4
+    T3 --> C1 & C5
+    T1 --> C2 & C5
+    T5 --> C1
+    T6 --> C5
+
+    style T2 fill:#ff4444,color:#fff
+    style T3 fill:#ff8c00,color:#fff
+```
+
+**الأحداث الرئيسية:**
+| Event Topic | Publisher | Consumers | الغرض |
+|---|---|---|---|
+| `threat.detected` | WAF, IDS, AI | Correlation, Alert, Response | إشعار الكشف عن تهديد |
+| `anomaly.scored` | UBA, AI | Correlation, Telemetry | تحديث نقاط الخطر |
+| `packet.inspected` | DPI Pipeline | SIEM, Prometheus | تسجيل الحزم المفحوصة |
+| `policy.evaluated` | Policy Engine | Data Plane, Audit Log | تسجيل القرارات |
+| `module.health` | All Modules | Telemetry, Alerting | مراقبة صحة المكونات |
+
+---
+
+## 3. 🧠 ML Pipeline الكامل (Production Grade)
+
+```mermaid
+flowchart TD
+    subgraph "1️⃣ Feature Extraction Layer"
+        FE1["📦 Packet Features\n(size, TTL, flags)"]
+        FE2["🌊 Flow Features\n(duration, bytes/pkt)"]
+        FE3["🔍 DNS Features\n(entropy, query length)"]
+        FE4["🔐 TLS Fingerprint\n(JA3 / JA4 hash)"]
+    end
+
+    subgraph "2️⃣ Stream Processing"
+        SP["⚡ Async Feature Aggregator\n(Sliding Window / Flink-style)"]
+    end
+
+    subgraph "3️⃣ Model Registry"
+        MR1["📦 Model v1.0 — Malware Classifier"]
+        MR2["📦 Model v2.1 — WAF NLP"]
+        MR3["📦 Model v3.0 — Behavioral (UBA)"]
+        MR_META["🗂️ Registry Metadata\n(version, performance, rollback)"]
+    end
+
+    subgraph "4️⃣ Inference Service"
+        IS["🚀 ONNX Runtime / TensorRT\nREST + gRPC API\nGPU Optional"]
+        CACHE["⚡ Prediction Cache\n(LRU, 100ms TTL)"]
+    end
+
+    subgraph "5️⃣ Feedback Loop"
+        FL1["👨‍💻 Analyst Labeling\n(False positive review)"]
+        FL2["🔄 Auto Retraining\n(Weekly pipeline)"]
+        FL3["📊 Model Performance\n(Drift detection)"]
+    end
+
+    FE1 & FE2 & FE3 & FE4 --> SP
+    SP --> IS
+    MR1 & MR2 & MR3 --> IS
+    IS --> CACHE
+    IS -->|"inference result"| DPI["To DPI Pipeline"]
+    FL1 & FL3 --> FL2
+    FL2 -->|"new model version"| MR_META
+    MR_META --> MR1 & MR2 & MR3
+```
+
+**Model Deployment Strategy:**
+| Strategy | الوصف | متى تستخدمه |
+|---|---|---|
+| **Blue/Green** | نسختان شغّالتان، تبديل فوري | rollback سريع |
+| **Canary** | 5% traffic للنموذج الجديد | اختبار التأثير أمان |
+| **Shadow** | النموذج الجديد يعمل بدون تأثير | مقارنة الأداء |
+| **A/B Test** | مقارنة controlled بين نموذجين | قياس دقة |
+
+---
+
+## 4. 📊 Observability Stack الكامل
+
+```mermaid
+graph TD
+    subgraph "Data Sources"
+        APP["🐍 Python Services\n(FastAPI, Modules)"]
+        KERNEL["⚡ eBPF / Kernel\n(bpf_printk, tracepoints)"]
+        PROXY["🔄 Proxy Engine\n(HAProxy / nginx style)"]
+    end
+
+    subgraph "Instrumentation"
+        OTEL["🔭 OpenTelemetry SDK\n(Traces + Metrics + Logs)"]
+        PROM_LIB["📊 prometheus_client\n(Custom metrics)"]
+    end
+
+    subgraph "Collection & Storage"
+        PROM["📈 Prometheus\n(Time-series DB)"]
+        LOKI["📝 Grafana Loki\n(Log aggregation)"]
+        TEMPO["🔍 Grafana Tempo\n(Distributed Tracing)"]
+    end
+
+    subgraph "Visualization & Alerting"
+        GRAF["📉 Grafana Dashboards"]
+        AM["🔔 AlertManager\n(Slack / PagerDuty)"]
+    end
+
+    APP --> OTEL --> PROM & LOKI & TEMPO
+    KERNEL --> PROM_LIB --> PROM
+    PROXY --> OTEL
+    PROM --> GRAF & AM
+    LOKI --> GRAF
+    TEMPO --> GRAF
+```
+
+**KPIs المُراقَبة:**
+| Metric | Target | Alert Threshold |
+|---|---|---|
+| `packets_per_second` | > 1M pps | < 500K pps |
+| `l7_latency_p99` | < 200µs | > 500µs |
+| `drop_rate` | < 0.1% | > 1% |
+| `ai_inference_latency` | < 5ms | > 20ms |
+| `pipeline_queue_depth` | < 1000 | > 5000 |
+| `module_crash_count` | 0 | > 0 per hour |
+
+---
+
+## 5. 🛡️ Security Hardening Architecture
+
+```mermaid
+graph TD
+    subgraph "External Boundary"
+        EXT["🌐 Internet / Client"]
+        GW["🔌 API Gateway\n(Rate Limit + WAF + Schema)"]
+    end
+
+    subgraph "Internal Services (mTLS Mesh)"
+        API["FastAPI Service"]
+        ML_SVC["ML Inference Service"]
+        CORR["Correlation Engine"]
+        DB_SVC["Database Service"]
+    end
+
+    subgraph "Identity Layer (Zero Trust)"
+        CERT["🔐 Internal CA\n(short-lived certs, 24h)"]
+        SPIFFE["🪪 SPIFFE Identity\n(workload identity)"]
+    end
+
+    EXT -->|"HTTPS (TLS 1.3)"| GW
+    GW -->|"rate limit: 100 req/s/IP\nJWT validation\nschema check"| API
+    
+    API <-->|"mTLS"| ML_SVC
+    API <-->|"mTLS"| CORR
+    API <-->|"mTLS"| DB_SVC
+    
+    CERT --> API & ML_SVC & CORR & DB_SVC
+    SPIFFE --> CERT
+```
+
+**طبقات الحماية:**
+| الطبقة | الآلية | الغرض |
+|---|---|---|
+| **Rate Limiting** | Token Bucket (100 req/s/IP) | منع brute force |
+| **mTLS** | شهادات داخلية قصيرة (24h) | تشفير الديني |
+| **Schema Validation** | Pydantic strict mode | منع injection |
+| **JWT + RBAC** | RS256 + 15min expiry | التحكم بالوصول |
+| **DDoS (SYN Flood)** | eBPF SYN cookie | kernel-level protection |
+| **Input Sanitization** | HTML escape + regex | XSS / SQLi منع |
+
+---
+
+## 6. 🧩 Failure Handling & Resilience
+
+```mermaid
+stateDiagram-v2
+    [*] --> Normal: System Start
+
+    Normal --> Degraded: Module Failure detected
+    Normal --> FailOpen: Data Plane crash
+    Normal --> FailClose: Critical security failure
+
+    Degraded --> Normal: Module recovered
+    Degraded --> FailOpen: Cascade failure
+
+    FailOpen --> Normal: Manual intervention
+    FailClose --> Normal: Admin override required
+
+    state Normal {
+        [*] --> Active
+        Active --> [*]: All modules healthy
+    }
+
+    state Degraded {
+        [*] --> FallbackRules
+        FallbackRules --> [*]: AI down → hardcoded rule engine
+    }
+
+    state FailOpen {
+        note: Traffic passes without DPI
+        note: Alert sent immediately
+    }
+
+    state FailClose {
+        note: All traffic blocked
+        note: Emergency alert
+    }
+```
+
+**سياسات المرونة:**
+| المكوِّن | فشل مؤقت | فشل كامل | الاسترداد |
+|---|---|---|---|
+| **eBPF Layer** | تعطل XDP → iptables fallback | Fail-Open | تلقائي عند إعادة الإقلاع |
+| **AI Module** | Retry x3 → rule-based fallback | Degraded mode | إعادة تحميل النموذج |
+| **Event Bus** | Buffer locally | Degraded mode | اتصال تلقائي |
+| **DPI Pipeline** | إنهاء الـ plugin → تخطيه | Circuit Breaker | hot reload |
+| **Database** | Connection pool retry | قراءة من Cache | reconnect auto |
+
+**Circuit Breaker Pattern:**
+```
+CLOSED → [5 failures / 10s] → OPEN (reject calls)
+OPEN → [30s timeout] → HALF-OPEN (test call)
+HALF-OPEN → [success] → CLOSED | [fail] → OPEN
+```
+
+---
+
+## 7. ☁️ High Availability Cluster Design
+
+```mermaid
+graph TD
+    subgraph "Active-Active Cluster"
+        NODE1["🖥️ Node 1\n(Active — Primary)"]
+        NODE2["🖥️ Node 2\n(Active — Secondary)"]
+        NODE3["🖥️ Node 3\n(Standby)"]
+    end
+
+    subgraph "Load Balancer"
+        LB["⚖️ ECMP / BGP Load Balancer\n(Health-check based)"]
+    end
+
+    subgraph "State Synchronization"
+        ETCD["📦 etcd Cluster\n(Leader Election / Raft)"]
+        SYNC["🔄 State Sync\n(ConnTrack replication)"]
+    end
+
+    subgraph "Shared State"
+        SESS["📡 Session Table\n(replicated)"]
+        POLICY["📋 Policy Store\n(versioned)"]
+        MODELS["🧠 Model Registry\n(shared FS / S3)"]
+    end
+
+    CLIENT["🌐 Client Traffic"] --> LB
+    LB --> NODE1 & NODE2
+    NODE3 -.->|"hot standby"| NODE1
+
+    NODE1 & NODE2 & NODE3 <--> ETCD
+    NODE1 <-->|"state replication"| SYNC
+    NODE2 <-->|"state replication"| SYNC
+
+    SYNC <--> SESS & POLICY & MODELS
+```
+
+**Failure Scenarios:**
+
+| السيناريو | الاكتشاف | الاستجابة | RTO |
+|---|---|---|---|
+| Node 1 crash | Health-check (1s) | LB removes node 1 | < 3s |
+| Network partition | etcd quorum loss | Leader election | < 5s |
+| Split-brain | Raft consensus | Highest-ID wins | < 10s |
+| Model corruption | Checksum validation | Rollback to prev | < 30s |
+
+---
+
+## 8. 🧱 Data Schemas (Core Domain Models)
+
+```mermaid
+erDiagram
+    PACKET {
+        string id
+        string src_ip
+        string dst_ip
+        int src_port
+        int dst_port
+        string protocol
+        int length
+        timestamp captured_at
+        bytes raw_payload
+    }
+
+    INSPECTION_CONTEXT {
+        string session_id
+        string identity_type
+        string user_id
+        string device_fingerprint
+        float risk_score
+        bool is_decrypted
+        string geo_country
+        timestamp created_at
+    }
+
+    SECURITY_EVENT {
+        string id
+        string event_type
+        string rule_id
+        float confidence
+        string severity
+        string src_ip
+        string dst_ip
+        json raw_evidence
+        timestamp detected_at
+    }
+
+    FIREWALL_RULE {
+        int id
+        string name
+        string action
+        string source_ip
+        string dest_ip
+        string protocol
+        string dest_port
+        int priority
+        int hit_count
+        bool is_critical
+        timestamp created_at
+    }
+
+    POLICY {
+        string id
+        string version
+        string name
+        json rules_snapshot
+        string created_by
+        timestamp activated_at
+        bool is_active
+    }
+
+    PACKET ||--o{ INSPECTION_CONTEXT : "enriches"
+    INSPECTION_CONTEXT ||--o{ SECURITY_EVENT : "triggers"
+    FIREWALL_RULE }o--|| POLICY : "belongs_to"
+    SECURITY_EVENT }o--o| FIREWALL_RULE : "matched_by"
+```
+
+---
+
+## 9. ⚙️ Configuration Management System
+
+```mermaid
+graph TD
+    subgraph "Config Sources (Priority Order)"
+        ENV["🔧 Environment Variables\n(highest priority)"]
+        FILE["📁 base.yaml\n(file config)"]
+        DB_CFG["🗄️ DB Config Store\n(dynamic settings)"]
+        DEFAULT["📋 Defaults\n(lowest priority)"]
+    end
+
+    subgraph "Config Manager"
+        LOADER["📥 Config Loader\n(merge + validate)"]
+        SCHEMA["✅ Schema Validator\n(Pydantic)"]
+        STORE["💾 Config Store\n(in-memory)"]
+        WATCHER["👁️ File Watcher\n(inotify)"]
+    end
+
+    subgraph "Hot Reload Pipeline"
+        CHANGE["config.changed event"]
+        VALIDATE["Validate new config"]
+        DIFF["Compute diff"]
+        APPLY["Apply changed keys only\n(no restart needed)"]
+        SNAPSHOT["📸 Snapshot for rollback"]
+    end
+
+    ENV & FILE & DB_CFG & DEFAULT --> LOADER
+    LOADER --> SCHEMA --> STORE
+    WATCHER -->|"File changed"| CHANGE
+    CHANGE --> VALIDATE --> DIFF --> APPLY --> SNAPSHOT
+```
+
+**Config Versioning:**
+| Feature | الوصف |
+|---|---|
+| **Snapshots** | كل تغيير ينشئ snapshot محفوظ |
+| **Rollback** | `config rollback --version=12` |
+| **Diff** | مقارنة بين إصدارَين |
+| **Env Separation** | `config.dev.yaml` / `config.prod.yaml` |
+| **Secrets Management** | قيم حساسة في Vault أو env vars فقط |
+
+---
+
+## 10. 📡 Network Architecture Details
+
+```mermaid
+flowchart TD
+    subgraph "Physical Interfaces"
+        WAN["🌐 WAN Interface\n(eth0 — Public IP)"]
+        LAN["🏠 LAN Interface\n(eth1 — 192.168.0.0/24)"]
+        DMZ["🔒 DMZ Interface\n(eth2 — 10.0.1.0/24)"]
+        MGMT["⚙️ MGMT Interface\n(eth3 — 172.16.0.0/24)"]
+    end
+
+    subgraph "Transparent Proxy Mode"
+        TP["🔄 iptables REDIRECT\nTCP 80,443 → 8080,8443"]
+        TPROXY["🔐 TPROXY\n(preserve original dst)"]
+    end
+
+    subgraph "TLS Interception Pipeline"
+        CLI_HELLO["Client Hello (TLS 1.3)"]
+        JA3["JA3/JA4 Fingerprint\n(before decryption)"]
+        BUMP["🔐 SSL Bump\n(re-sign with CA)"]
+        INSPECT["DPI on plaintext\n(WAF / DLP / Malware)"]
+        FORWARD["Re-encrypt to server"]
+    end
+
+    subgraph "NAT Architecture"
+        MASQ["MASQUERADE\n(hide client IPs)"]
+        SNAT["SNAT (static)\n(server published services)"]
+        DNAT["DNAT (port forward)\n(DMZ exposure)"]
+    end
+
+    WAN --> TP & TPROXY
+    TP --> CLI_HELLO --> JA3 --> BUMP --> INSPECT --> FORWARD
+    LAN --> MASQ --> WAN
+    MASQ --> SNAT & DNAT
+```
+
+**TLS Inspection Limits:**
+| Scenario | الإجراء |
+|---|---|
+| Certificate Pinning (HPKP) | Bypass (no inspection) — avoid MiTM |
+| Banking / Health domains | Exemption list (no inspection) |
+| Expired/Self-signed cert | Block + user warning |
+| ESNI / ECH traffic | Metadata analysis only |
+
+---
+
+## 11. 🔐 PKI & Certificate Lifecycle
+
+```mermaid
+sequenceDiagram
+    participant ADMIN as 👨‍💻 Admin
+    participant CA    as 🔐 Root CA
+    participant INTER as 📜 Intermediate CA
+    participant GW   as 🌐 SSL Gateway
+    participant CLIENT as 💻 Client
+
+    ADMIN->>CA: Generate Root CA (Ed25519, 10yr)
+    CA-->>ADMIN: rootCA.pem
+    ADMIN->>CLIENT: Install rootCA.pem (trust anchor)
+
+    loop Daily Certificate Rotation
+        GW->>INTER: CSR for inspection cert
+        INTER->>CA: Sign with intermediate key
+        CA-->>INTER: Signed cert (24h validity)
+        INTER-->>GW: Deploy new cert (zero downtime)
+    end
+
+    CLIENT->>GW: HTTPS Request
+    GW->>GW: SSL Bump → re-sign with CA
+    GW-->>CLIENT: Signed by our CA (trusted)
+
+    Note over GW,CLIENT: OCSP Stapling — GW checks revocation
+    GW->>CA: OCSP Request
+    CA-->>GW: OCSP Response (cached 1hr)
+```
+
+**Certificate Hierarchy:**
+```
+Root CA (offline, 10 years, Ed25519)
+  └── Intermediate CA (online, 1 year)
+        ├── TLS Inspection CA (24h, auto-rotate)
+        ├── Internal Services CA (30d, mTLS)
+        └── Admin Portal CA (90d)
+```
+
+---
+
+## 12. 🧩 Plugin System Design (Enterprise Safe)
+
+```mermaid
+graph TD
+    subgraph "Plugin Lifecycle"
+        LOAD["📦 Load Plugin\n(.py file / WASM)"]
+        VALIDATE["✅ Validate Manifest\n(version, API compat)"]
+        SANDBOX["🔒 Sandbox Init\n(restricted Python env)"]
+        ACTIVATE["🟢 Activate\n(register with Pipeline)"]
+        HOT["🔄 Hot Reload\n(zero downtime swap)"]
+        UNLOAD["🔴 Unload\n(graceful shutdown)"]
+    end
+
+    subgraph "Sandbox Restrictions"
+        R1["❌ No network.socket()"]
+        R2["❌ No os.system()"]
+        R3["❌ No filesystem write"]
+        R4["❌ No subprocess"]
+        R5["✅ Controlled APIs only\n(inspect, log, score)"]
+    end
+
+    subgraph "Plugin API Contract"
+        API_IN["def inspect(context: InspectionContext)"]
+        API_OUT["returns: InspectionResult(action, score, reason)"]
+        API_CB["def on_config_reload(new_cfg)"]
+        API_HLT["def health_check() → bool"]
+    end
+
+    LOAD --> VALIDATE --> SANDBOX --> ACTIVATE
+    ACTIVATE -->|"live traffic"| HOT
+    HOT --> UNLOAD
+
+    SANDBOX --> R1 & R2 & R3 & R4 & R5
+    ACTIVATE --> API_IN & API_OUT & API_CB & API_HLT
+```
+
+**Plugin Version Compatibility:**
+```
+Plugin Manifest:
+  name: "malware_av"
+  version: "2.1.0"
+  api_version: ">=3.0, <4.0"   ← must match Pipeline API version
+  requires: ["ml_core>=1.5"]
+```
+
+---
+
+## 13. 🌐 Threat Intelligence Integration
+
+```mermaid
+flowchart TD
+    subgraph "🌍 External Feeds"
+        F1["AbuseIPDB\n(IP reputation)"]
+        F2["AlienVault OTX\n(IOC / malware)"]
+        F3["Emerging Threats\n(signatures)"]
+        F4["Custom TAXII\n(enterprise feed)"]
+    end
+
+    subgraph "🔄 Ingestion Pipeline"
+        FETCH["⏱️ Scheduled Fetcher\n(every 15 min)"]
+        NORM["🔧 Normalizer\n(STIX 2.1 format)"]
+        DEDUP["🔍 Deduplicator\n(SHA256 matching)"]
+        SCORE["📊 Enricher\n(confidence + age score)"]
+    end
+
+    subgraph "💾 Intel Store"
+        IP_REP["📊 IP Reputation DB\n(Redis HSet — O(1) lookup)"]
+        DOMAIN_REP["🔍 Domain Reputation DB\n(Bloom Filter + exact)"]
+        IOC["🗂️ IOC Store\n(file hashes, patterns)"]
+    end
+
+    subgraph "Integration Points"
+        FW_CHK["🛡️ Firewall ACL Check"]
+        DNS_CHK["🔍 DNS Security Check"]
+        MAL_CHK["🦠 Malware Hash Check"]
+    end
+
+    F1 & F2 & F3 & F4 --> FETCH --> NORM --> DEDUP --> SCORE
+    SCORE --> IP_REP & DOMAIN_REP & IOC
+    IP_REP --> FW_CHK
+    DOMAIN_REP --> DNS_CHK
+    IOC --> MAL_CHK
+```
+
+---
+
+## 14. 🚀 Performance Engineering Targets
+
+```mermaid
+graph LR
+    subgraph "Performance Goals"
+        T1["🎯 Throughput\n10–40 Gbps per node"]
+        T2["⚡ L4 Latency\n< 10 µs (eBPF path)"]
+        T3["🔍 L7 Latency (p99)\n< 200 µs"]
+        T4["🧠 AI Inference\n< 5 ms"]
+        T5["💾 Memory / Core\n< 512 MB per worker"]
+    end
+
+    subgraph "Optimizations"
+        O1["CPU Pinning\n(isolcpus + taskset)"]
+        O2["NUMA-Aware Alloc\n(numactl --membind)"]
+        O3["Batch Processing\n(64 packets per batch)"]
+        O4["Zero-Copy Buffers\n(AF_XDP / io_uring)"]
+        O5["Lock-Free Queues\n(SPSC ring buffer)"]
+        O6["Prediction Cache\n(LRU 100ms TTL)"]
+    end
+
+    T1 --> O3 & O4
+    T2 --> O1 & O5
+    T3 --> O2 & O6
+    T4 --> O6
+    T5 --> O2
+```
+
+**Load Testing Strategy:**
+
+| Test | Tool | السيناريو | المعيار |
+|---|---|---|---|
+| Throughput | `iperf3 + pktgen` | 10M packets/s اصطناعية | > 1M pps |
+| Latency | `hping3` | RTT measurement | p99 < 200µs |
+| Stress (L7) | `wrk2` + `h2load` | HTTP/2 flood | no crash at 100K req/s |
+| AI Inference | `locust` | 1000 concurrent inference calls | p99 < 5ms |
+| HA Failover | Manual kill + tcpdump | Node crash → reconnect | < 3s |
+
+---
+
+## 15. 🔄 Full System Mental Model
+
+```mermaid
+flowchart TB
+    subgraph "🌐 External World"
+        CLIENT["💻 Client"]
+        INTERNET["🌍 Internet"]
+        ADMIN_UI["🖥️ Admin Browser"]
+    end
+
+    subgraph "🔵 Control Plane"
+        WEB_UI["React Dashboard"]
+        API_GW["FastAPI + API Gateway"]
+        POLICY_ENG["Policy Engine"]
+        CFG_MGR["Config Manager"]
+        CLUSTER_MGR["Cluster Manager (etcd)"]
+    end
+
+    subgraph "🔴 Data Plane"
+        NIC["NIC (Physical)"]
+        EBPF["eBPF / XDP\n~1µs drop"]
+        CONNTRACK["Connection Tracker"]
+        PROXY["L7 Proxy / TLS Bump"]
+        PIPELINE["DPI Plugin Pipeline"]
+    end
+
+    subgraph "⚡ Event Bus — NATS/Kafka"
+        BUS[" "]
+    end
+
+    subgraph "🟣 Intelligence Plane"
+        UBA_E["UBA Engine"]
+        ML_INF["ML Inference\n(ONNX)"]
+        CORR_E["Correlation Engine"]
+        THREAT_INTEL["Threat Intel Store"]
+    end
+
+    subgraph "📊 Observability Plane"
+        PROM_G["Prometheus + Grafana"]
+        LOKI_G["Loki (Logs)"]
+        OTEL_G["OpenTelemetry (Traces)"]
+    end
+
+    ADMIN_UI --> API_GW --> POLICY_ENG --> CFG_MGR
+    POLICY_ENG -->|"compiled rules"| PIPELINE
+    CFG_MGR <--> CLUSTER_MGR
+
+    CLIENT --> NIC --> EBPF
+    EBPF -->|"pass"| CONNTRACK --> PROXY --> PIPELINE
+    EBPF -->|"block ⚡"| X(["❌"])
+
+    PIPELINE <-->|"events"| BUS
+    BUS <--> UBA_E & ML_INF & CORR_E & THREAT_INTEL
+    CORR_E -->|"block signal"| EBPF
+
+    PIPELINE & EBPF & ML_INF --> PROM_G & LOKI_G & OTEL_G
+
+    PROXY -->|"allowed"| INTERNET
+```
+
+---
+
+## 16. 📊 مصفوفة المقارنة مع NGFW التجاري
+
+| الميزة | CyberNexus | Fortinet NGFW | Palo Alto NGFW |
+|---|---|---|---|
+| Control/Data Plane Separation | ✅ | ✅ | ✅ |
+| eBPF Hardware Acceleration | ✅ | ✅ (ASIC) | ✅ (ASIC) |
+| Event-Driven Architecture | ✅ | ✅ | ✅ |
+| ML Inference Inline/Async | ✅ | ✅ | ✅ |
+| Full Observability Stack | ✅ | ✅ | ✅ |
+| Plugin System (Sandbox/WASM) | ✅ | ✅ | ✅ (PAN-OS Apps) |
+| mTLS Internal Services | ✅ | ✅ | ✅ |
+| Threat Intel Integration | ✅ | ✅ | ✅ |
+| Smart Policy Optimizer | ✅ **unique** | ❌ | ❌ |
+| Active-Active Config/HA Sync | ✅ | ✅ | ✅ |
+| Open Source / Customizable | ✅ **unique** | ❌ | ❌ |
+
+---
+
+## 17. الاستنتاج والتوصيات
+
+### 🎯 المرحلة الحالية (Implemented — Phase 7 Enterprise Ready):
+- ✅ **Event-Driven Architecture:** Event Bus (NATS/Memory) للترابط المتزامن وغير المتزامن.
+- ✅ **Observability Stack:** Prometheus لجمع المقاييس، Loki للوغات، و Tempo لتتبع الطلبات.
+- ✅ **High Availability:** etcd-backed Active-Active Leader Election & State Sync.
+- ✅ **Security Hardening:** mTLS داخلي بين الخدمات، و Threat Intel عبر AbuseIPDB (حظر من الطبقة 0).
+- ✅ **System Resilience:** Circuit Breakers و OOM-Protection و Core Affinity Protection (توزيع معالجات فصل مسارات التحكم والبيانات).
+- ✅ **Dynamic Config:** محرك ConfigManager V2 لدعم الـ Rollbacks وتغيير الـ Toggles دون انتظار (Hot reload).
+- ✅ **Performance Engine:** Acceleration Bridge مباشر لحظر الهجمات على مستوى الـ Kernel (XDP) بدون المرور بـ Python، مع محرك تحليل Correlation Engine لتجميع تهديدات الـ WAF والـ IDS والـ UBA والـ AI للحظر المشترك.
+- ✅ Context Bus (5 مصادر هوية)
+- ✅ 15 وحدة DPI و AI Correlation
+- ✅ Smart Policy Optimizer (فريد — غير موجود في Fortinet/PA)
+
+### 🔥 المراحل المستقبلية:
+- تصميم واجهة متقدمة Frontend Console لإدارة الـ Enterprise. (تم البدء بها)
+    Circuit Breaker Implementation      :2026-Q3, 2026-Q4
+```
+
+> [!NOTE]
+> **المميز الفريد لـ CyberNexus:** الجمع بين الـ Zero-Trust Multi-Source Identity Model والـ Smart Policy Optimizer الرياضي الحتمي في نظام مفتوح المصدر قابل للتخصيص الكامل — وهو ما لا يوفره أي NGFW تجاري حالياً.
+
+---
+*CyberNexus NGFW — Advanced Architecture Blueprint — 2026*

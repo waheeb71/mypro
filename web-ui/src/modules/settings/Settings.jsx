@@ -1,21 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { systemApi } from '../../services/api';
-import { Save, RefreshCw, FileText, Server, Shield, Layers, Plus, Terminal } from 'lucide-react';
+import { Save, RefreshCw, FileText, Server, Shield, Layers, Plus, Terminal, BrainCircuit, Key } from 'lucide-react';
 import './Settings.css';
 
+// Import New Sub-components
+import MLCoreSettings from './MLCoreSettings';
+import ActiveBlocks from './ActiveBlocks';
+import PKISettings from './PKISettings';
+
 export default function Settings() {
-  const [activeFile, setActiveFile] = useState('base.yaml');
+  const [activeFile, setActiveFile] = useState('ml_core');
   const [expandedSections, setExpandedSections] = useState({});
   const qc = useQueryClient();
 
-  // Fetch configuration
+  // Fetch configuration only for YAML files
+  const isYamlFile = activeFile.includes('.yaml') || activeFile.includes('.conf');
+
   const { data: config, isLoading, isError, refetch } = useQuery({
     queryKey: ['config', activeFile],
     queryFn: async () => {
       const res = await systemApi.config(activeFile);
       return res.data;
-    }
+    },
+    enabled: isYamlFile
   });
 
   const updateMutation = useMutation({
@@ -35,9 +43,6 @@ export default function Settings() {
       alert(`Failed to restore ${activeFile}: ${err.message}`);
     }
   });
-
-  if (isLoading) return <div className="settings-loading"><RefreshCw className="spin" /> Loading configurations...</div>;
-  if (isError) return <div className="settings-error">Failed to load {activeFile}</div>;
 
   const handleToggleExpand = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -59,70 +64,40 @@ export default function Settings() {
 
   const renderValueInput = (category, objKey, val) => {
     const type = typeof val;
-
     if (type === 'boolean') {
       return (
         <label className="settings-toggle">
-          <input
-            type="checkbox"
-            checked={val}
-            onChange={(e) => handleValueChange(category, objKey, e.target.checked, 'boolean')}
-            disabled={updateMutation.isPending}
-          />
+          <input type="checkbox" checked={val} onChange={(e) => handleValueChange(category, objKey, e.target.checked, 'boolean')} disabled={updateMutation.isPending} />
           <span className="slider"></span>
         </label>
       );
     }
-
     if (type === 'number') {
-      return (
-        <input
-          type="number"
-          defaultValue={val}
-          onBlur={(e) => handleValueChange(category, objKey, e.target.value, 'number')}
-          className="settings-input settings-number"
-          disabled={updateMutation.isPending}
-        />
-      );
+      return <input type="number" defaultValue={val} onBlur={(e) => handleValueChange(category, objKey, e.target.value, 'number')} className="settings-input settings-number" disabled={updateMutation.isPending} />;
     }
-
     if (Array.isArray(val)) {
       return <div className="settings-array">{val.length} items (Edit via text mode coming soon)</div>;
     }
-
     if (type === 'object' && val !== null) {
       return <div className="settings-nested-hint">Nested Object</div>;
     }
-
-    return (
-      <input
-        type="text"
-        defaultValue={val}
-        onBlur={(e) => handleValueChange(category, objKey, e.target.value, 'string')}
-        className="settings-input"
-        disabled={updateMutation.isPending}
-      />
-    );
+    return <input type="text" defaultValue={val} onBlur={(e) => handleValueChange(category, objKey, e.target.value, 'string')} className="settings-input" disabled={updateMutation.isPending} />;
   };
 
   const renderBlock = (category, sectionData) => {
     if (typeof sectionData !== 'object' || sectionData === null) return null;
-
     return (
       <div className="settings-section" key={category}>
         <div className="settings-section-header" onClick={() => handleToggleExpand(category)}>
           <h3>{category.toUpperCase()}</h3>
           <span className="expand-indicator">{expandedSections[category] ? '▼' : '▶'}</span>
         </div>
-
         {expandedSections[category] && (
           <div className="settings-section-body">
             {Object.entries(sectionData).map(([k, v]) => (
               <div className="settings-row" key={k}>
                 <div className="settings-key">{k}</div>
-                <div className="settings-val">
-                  {renderValueInput(category, k, v)}
-                </div>
+                <div className="settings-val">{renderValueInput(category, k, v)}</div>
               </div>
             ))}
           </div>
@@ -131,47 +106,61 @@ export default function Settings() {
     );
   };
 
+  const renderContent = () => {
+    if (activeFile === 'ml_core') return <MLCoreSettings />;
+    if (activeFile === 'ip_blocks') return <ActiveBlocks />;
+    if (activeFile === 'pki_ca') return <PKISettings />;
+
+    if (isLoading && isYamlFile) return <div className="settings-loading"><RefreshCw className="spin" /> Loading configurations...</div>;
+    if (isError && isYamlFile) return <div className="settings-error">Failed to load {activeFile}</div>;
+
+    return (
+      <>
+        {config && Object.entries(config).map(([category, data]) => renderBlock(category, data))}
+      </>
+    );
+  };
+
   return (
     <div className="settings-page">
       <div className="settings-header">
-        <h1>Configuration Center</h1>
-        <p>Manage raw configuration YAML files for the CyberNexus engine in real-time.</p>
+        <h1>Global Configurations</h1>
+        <p>Manage system-wide components, AI Thresholds, Hardware Firewalls, and raw YAML properties.</p>
       </div>
 
       <div className="settings-controls">
         <div className="file-tabs">
-          <div
-            className={`file-tab ${activeFile === 'base.yaml' ? 'active' : ''}`}
-            onClick={() => setActiveFile('base.yaml')}
-          >
+          <div className={`file-tab ${activeFile === 'ml_core' ? 'active' : ''}`} onClick={() => setActiveFile('ml_core')}>
+            <BrainCircuit size={18} /> ML Engine
+          </div>
+          <div className={`file-tab ${activeFile === 'ip_blocks' ? 'active' : ''}`} onClick={() => setActiveFile('ip_blocks')}>
+            <Shield size={18} /> IP Blocks
+          </div>
+          <div className={`file-tab ${activeFile === 'pki_ca' ? 'active' : ''}`} onClick={() => setActiveFile('pki_ca')}>
+            <Key size={18} /> PKI & CA
+          </div>
+          <div className={`file-tab ${activeFile === 'base.yaml' ? 'active' : ''}`} onClick={() => setActiveFile('base.yaml')}>
             <Server size={18} /> base.yaml
           </div>
-          <div
-            className={`file-tab ${activeFile === 'phase2_3.yaml' ? 'active' : ''}`}
-            onClick={() => setActiveFile('phase2_3.yaml')}
-          >
+          <div className={`file-tab ${activeFile === 'phase2_3.yaml' ? 'active' : ''}`} onClick={() => setActiveFile('phase2_3.yaml')}>
             <Layers size={18} /> phase2_3.yaml
-          </div>
-          <div
-            className={`file-tab ${activeFile === 'sysctl-optimization.conf' ? 'active' : ''}`}
-            onClick={() => setActiveFile('sysctl-optimization.conf')}
-          >
-            <Terminal size={18} /> sysctl (Kernel)
           </div>
         </div>
 
-        <div className="settings-actions" style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn-refresh" onClick={handleReset} style={{ borderColor: 'var(--error-color)', color: 'var(--error-color)' }}>
-            <RefreshCw size={16} /> Restore Default
-          </button>
-          <button className="btn-refresh" onClick={() => refetch()}>
-            <RefreshCw size={16} /> Refresh
-          </button>
-        </div>
+        {isYamlFile && (
+          <div className="settings-actions" style={{ display: 'flex', gap: '8px' }}>
+            <button className="btn-refresh" onClick={handleReset} style={{ borderColor: 'var(--error-color)', color: 'var(--error-color)' }}>
+              <RefreshCw size={16} /> Restore Default
+            </button>
+            <button className="btn-refresh" onClick={() => refetch()}>
+              <RefreshCw size={16} /> Refresh
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="settings-content">
-        {config && Object.entries(config).map(([category, data]) => renderBlock(category, data))}
+        {renderContent()}
       </div>
 
       {updateMutation.isPending && (

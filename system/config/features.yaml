@@ -1,0 +1,114 @@
+# =============================================================
+# CyberNexus NGFW — Master Feature Flags
+# =============================================================
+# Every feature in the system is controlled here.
+# Hot-reload: changes take effect within 5 seconds, no restart needed.
+# Priority: ENV vars > this file > module defaults
+#
+# Set to false to disable without touching code.
+# =============================================================
+
+features:
+
+  # ------------------------------------------------------------------
+  # DATA PLANE — High-speed packet processing layer
+  # ------------------------------------------------------------------
+  data_plane:
+    enabled: true
+    ebpf_acceleration: false          # Requires Linux kernel 5.15+ with BTF
+    tls_inspection: false             # Requires Root CA installed on clients
+    connection_tracking: true         # Stateful session management
+    per_core_processing: false        # Pins workers to CPU cores (Phase 7L)
+    fail_mode: "open"                 # "open" (allow) | "close" (block) on failure
+
+  # ------------------------------------------------------------------
+  # EVENT BUS — Core async backbone (Phase 7A)
+  # ------------------------------------------------------------------
+  event_bus:
+    enabled: false                    # Set true when NATS server is running
+    backend: "memory"                 # "nats" | "kafka" | "memory" (dev/testing)
+    nats_url: "nats://localhost:4222"
+    kafka_brokers: ["localhost:9092"]
+    reconnect_wait_s: 2
+    max_reconnect: 60
+    publish_timeout_s: 1.0
+
+  # ------------------------------------------------------------------
+  # AI ENGINE — Optional intelligence layer (Phase 7I)
+  # ------------------------------------------------------------------
+  ai_engine:
+    enabled: true
+    mode: "async"                     # "inline" | "async" | "disabled"
+    model_version: "v1.0.0"
+    inline_blocking: false            # AI blocks traffic ONLY if true + mode=inline
+    fallback_on_failure: true         # Falls back to rule-based engine on AI crash
+    inference_timeout_ms: 5000        # Max wait time for inline AI decision
+    confidence_threshold: 0.85        # Minimum confidence to act on AI score
+
+  # ------------------------------------------------------------------
+  # OBSERVABILITY — Metrics, Logs, Tracing (Phase 7D)
+  # ------------------------------------------------------------------
+  observability:
+    enabled: true
+    metrics: true                     # Prometheus /metrics endpoint
+    logs: true                        # Structured JSON logs
+    tracing: false                    # OpenTelemetry (requires Tempo/Jaeger)
+    log_level: "INFO"                 # DEBUG | INFO | WARNING | ERROR | CRITICAL
+    metrics_port: 9090
+    otlp_endpoint: "http://localhost:4317"
+
+  # ------------------------------------------------------------------
+  # THREAT INTELLIGENCE — External feed integration (Phase 7F)
+  # ------------------------------------------------------------------
+  threat_intel:
+    enabled: false                    # Requires API keys below
+    refresh_interval_minutes: 15
+    block_threshold: 0.85             # Score >= this → auto-block
+    providers:
+      abuseipdb:
+        enabled: false
+        api_key: "${ABUSEIPDB_API_KEY}"
+        confidence_minimum: 90
+        max_ips: 10000
+      alienvault_otx:
+        enabled: false
+        api_key: "${ALIENVAULT_API_KEY}"
+
+  # ------------------------------------------------------------------
+  # PLUGIN SYSTEM — Hot-loadable DPI modules (Phase 7K)
+  # ------------------------------------------------------------------
+  plugins:
+    enabled: true
+    sandbox: "restricted_python"      # "wasm" | "restricted_python" | "none"
+    hot_reload: true
+    plugin_dir: "plugins/"
+    max_execution_ms: 100             # Kill plugin if exceeds this
+
+  # ------------------------------------------------------------------
+  # HIGH AVAILABILITY — Multi-node cluster (Phase 7C)
+  # ------------------------------------------------------------------
+  ha:
+    enabled: false                    # Requires multi-node etcd cluster
+    mode: "active-passive"            # "active-active" | "active-passive"
+    node_id: "${NGFW_NODE_ID}"
+    etcd_endpoints: ["localhost:2379"]
+    heartbeat_interval_s: 1
+    election_timeout_s: 5
+
+  # ------------------------------------------------------------------
+  # SECURITY HARDENING (Phase 7B)
+  # ------------------------------------------------------------------
+  security:
+    mtls_internal: false              # mTLS between internal services
+    rate_limiting: true
+    rate_limit_per_ip: 100            # requests per second
+    ddos_protection: true
+    ddos_syn_threshold: 1000          # SYN packets/s before protection activates
+
+  # ------------------------------------------------------------------
+  # SMART POLICY OPTIMIZER — Phase 6 (already implemented)
+  # ------------------------------------------------------------------
+  optimizer:
+    enabled: true
+    auto_apply: false                 # NEVER auto-apply — Human-in-the-Loop always
+    unused_threshold_days: 30

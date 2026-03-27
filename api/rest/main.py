@@ -24,6 +24,18 @@ from api.rest.endpoints.config_routes import router as config_router
 from api.rest.endpoints.users_routes import router as users_router
 from api.rest.endpoints.networking_routes import router as networking_router
 from api.rest.endpoints.update_routes import router as update_router
+from api.rest.endpoints.ml_core_routes import router as ml_core_router
+from api.rest.endpoints.response_routes import router as response_router
+from api.rest.endpoints.ha_routes import router as ha_router
+
+# ── Phase 7: New System Routes ────────────────────────────────────────────────
+from api.rest.endpoints.system_routes import router as system_health_router
+
+# Newly relocated system API routers
+from api.core.system import router as sys_engine_router
+from api.core.interfaces import router as sys_interfaces_router
+from api.auth.router import router as sys_auth_pki_router
+from api.telemetry.router import router as sys_telemetry_router
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +137,33 @@ def create_app() -> FastAPI:
     application.include_router(users_router)
     application.include_router(networking_router)
     application.include_router(update_router)
+    application.include_router(ml_core_router)
+    application.include_router(response_router)
+    application.include_router(ha_router)
+    
+    # ── Register Relocated System Routers ─────────────────────────────────────
+    application.include_router(sys_engine_router)
+    application.include_router(sys_interfaces_router)
+    application.include_router(sys_auth_pki_router)
+    application.include_router(sys_telemetry_router)
+
+    # ── Phase 7: Health, Features & Metrics ───────────────────────────────────
+    application.include_router(system_health_router)
+
+    from api.rest.endpoints.config_manager_routes import router as config_manager_router
+    application.include_router(config_manager_router)
+
+    @application.get("/metrics", include_in_schema=False)
+    async def prometheus_metrics():
+        """Prometheus scrape endpoint — enabled by features.observability.metrics"""
+        from fastapi.responses import Response
+        from system.telemetry.prometheus_exporter import MetricsExporter
+        exp = MetricsExporter.instance()
+        return Response(content=exp.generate_latest(), media_type=exp.content_type())
+    
+    # Optimizer
+    from api.rest.endpoints.optimizer_routes import router as optimizer_router
+    application.include_router(optimizer_router)
 
     # ── Register Dynamic Module Routers ───────────────────────────────────────
     # Each module in modules/ or system/ can expose its own router at
@@ -152,12 +191,12 @@ def create_app() -> FastAPI:
 
 def _load_module_routers(app: FastAPI):
     """
-    Auto-discover <module>/api/router.py files inside modules/ and system/.
+    Auto-discover <module>/api/router.py files inside modules/.
     Each router is expected to export a `router: APIRouter` object.
     To add a new module endpoint: create modules/<name>/api/router.py, done.
     """
     base_dir = Path(__file__).parent.parent.parent
-    for search_dir in ("modules", "system"):
+    for search_dir in ("modules",):
         dir_path = base_dir / search_dir
         if not dir_path.exists():
             continue

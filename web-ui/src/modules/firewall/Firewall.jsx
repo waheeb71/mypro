@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Shield, Plus, Trash2, Edit2, Search, Filter, CheckCircle, XCircle
+  Shield, Plus, Trash2, Edit2, Search, Filter, CheckCircle, XCircle, BrainCircuit
 } from 'lucide-react';
 import { firewallApi } from '../../services/api';
+import Optimizer from './Optimizer';
 import './Firewall.css';
 
 const DEMO_RULES = [
@@ -23,6 +24,7 @@ function ActionBadge({ action }) {
 export default function Firewall() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('rules');
 
   const { data: rules = DEMO_RULES, isLoading } = useQuery({
     queryKey: ['firewall-rules'],
@@ -52,83 +54,102 @@ export default function Firewall() {
           <p className="page-subtitle">Manage network access control policies</p>
         </div>
         <div style={{ display: 'flex', gap: 'var(--sp-3)' }}>
-          <button className="btn btn-ghost">
-            <Filter size={15} /> Filter
-          </button>
-          <button className="btn btn-primary">
-            <Plus size={15} /> Add Rule
-          </button>
+          {activeTab === 'rules' && (
+            <>
+              <button className="btn btn-ghost"><Filter size={15} /> Filter</button>
+              <button className="btn btn-primary"><Plus size={15} /> Add Rule</button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Search */}
-      <div className="card" style={{ padding: 'var(--sp-4)', display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
-        <Search size={16} style={{ color: 'var(--text-muted)' }} />
-        <input
-          className="input"
-          style={{ border: 'none', background: 'transparent', padding: 0 }}
-          placeholder="Search rules by name or port…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <span className="tag">{filtered.length} rules</span>
+      {/* Tab Switcher */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 'var(--sp-5)', borderBottom: '1px solid var(--border)' }}>
+        {[['rules', Shield, 'Policy Rules'], ['optimizer', BrainCircuit, 'Smart Optimizer']].map(([tab, Icon, label]) => (
+          <button key={tab} onClick={() => setActiveTab(tab)} style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: 'none', border: 'none',
+            borderBottom: activeTab === tab ? '2px solid var(--accent)' : '2px solid transparent',
+            color: activeTab === tab ? 'var(--accent)' : 'var(--text-secondary)',
+            cursor: 'pointer', fontWeight: activeTab === tab ? 600 : 400, fontSize: 'var(--text-sm)', transition: 'all 0.2s',
+          }}><Icon size={15} />{label}</button>
+        ))}
       </div>
 
-      {/* Rules Table */}
-      <div className="card" style={{ overflow: 'hidden' }}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Action</th>
-              <th>Protocol</th>
-              <th>Source</th>
-              <th>Destination</th>
-              <th>Port</th>
-              <th>Priority</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(rule => (
-              <tr key={rule.id}>
-                <td>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--accent)' }}>
-                    {rule.name}
-                  </span>
-                </td>
-                <td><ActionBadge action={rule.action} /></td>
-                <td><span className="tag">{rule.protocol.toUpperCase()}</span></td>
-                <td style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>{rule.source_ip}</td>
-                <td style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>{rule.destination_ip}</td>
-                <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{rule.destination_port}</td>
-                <td style={{ color: 'var(--text-muted)' }}>{rule.priority}</td>
-                <td>
-                  {rule.enabled
-                    ? <span className="badge badge-success"><CheckCircle size={11} /> Active</span>
-                    : <span className="badge badge-info"><XCircle size={11} /> Disabled</span>
-                  }
-                </td>
-                <td>
-                  <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
-                    <button className="icon-btn" title="Edit">
-                      <Edit2 size={14} />
-                    </button>
-                    <button
-                      className="icon-btn danger"
-                      title="Delete"
-                      onClick={() => deleteMutation.mutate(rule.id)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {activeTab === 'optimizer' && <Optimizer />}
+
+      {activeTab === 'rules' && (
+        <>
+          {/* Search */}
+          <div className="card" style={{ padding: 'var(--sp-4)', display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+            <Search size={16} style={{ color: 'var(--text-muted)' }} />
+            <input
+              className="input"
+              style={{ border: 'none', background: 'transparent', padding: 0 }}
+              placeholder="Search rules by name or port…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <span className="tag">{filtered.length} rules</span>
+          </div>
+
+          {/* Rules Table */}
+          <div className="card" style={{ overflow: 'hidden' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Action</th>
+                  <th>Protocol</th>
+                  <th>Source</th>
+                  <th>Destination</th>
+                  <th>Port</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(rule => (
+                  <tr key={rule.id}>
+                    <td>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--accent)' }}>
+                        {rule.name}
+                      </span>
+                    </td>
+                    <td><ActionBadge action={rule.action} /></td>
+                    <td><span className="tag">{rule.protocol.toUpperCase()}</span></td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>{rule.source_ip}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>{rule.destination_ip}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{rule.destination_port}</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{rule.priority}</td>
+                    <td>
+                      {rule.enabled
+                        ? <span className="badge badge-success"><CheckCircle size={11} /> Active</span>
+                        : <span className="badge badge-info"><XCircle size={11} /> Disabled</span>
+                      }
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                        <button className="icon-btn" title="Edit">
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          className="icon-btn danger"
+                          title="Delete"
+                          onClick={() => deleteMutation.mutate(rule.id)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }
+

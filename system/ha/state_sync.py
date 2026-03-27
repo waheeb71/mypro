@@ -1,4 +1,4 @@
-"""
+"""                                 
 Enterprise CyberNexus - HA State Synchronizer
 
 Mirrors state (like new active connections, updated database rules)
@@ -8,7 +8,9 @@ from the MASTER node to the BACKUP node to ensure a seamless failover.
 import json
 import asyncio
 import logging
-from typing import Optional, Dict
+import threading
+import time
+from typing import Any, Callable, Dict, List, Optional
 
 class StateSynchronizer:
     """Synchronizes state data from MASTER to BACKUP nodes."""
@@ -105,3 +107,105 @@ class StateSynchronizer:
         except Exception as e:
             # It's expected to fail if peer is down or not ready
             pass
+
+
+# ══════════════════════════════════════════════════════
+# Phase 7C — etcd-backed StateSyncManager (Active-Active HA)
+# ══════════════════════════════════════════════════════
+
+_logger = logging.getLogger(__name__)
+
+
+class StateSyncManager:
+    """
+    Distributed state store backed by etcd.
+    Local cache-first reads; writes go to both local + etcd.
+    Cluster-wide IP block, session, and rule override replication.
+    Falls back to in-memory when ha.enabled=false or etcd3 unavailable.
+    """
+
+    _instance: Optional["StateSyncManager"] = None
+    _cls_lock = threading.RLock()
+
+    def __init__(self):
+        from system.config.feature_flags import FeatureFlagManager
+        self._flags = FeatureFlagManager.instance()
+        self._local_store: Dict[str, Any] = {}
+        self._store_lock = threading.RLock()
+        self._client = None
+        self._enabled = self._flags.current.ha.enabled
+
+    @classmethod
+    def instance(cls) -> "StateSyncManager":
+        if cls._instance is None:
+            with cls._cls_lock:
+                if cls._instance is None:
+                    cls._instance = cls()
+        return cls._instance
+
+    async def start(self) -> None:
+        if not self._enabled:
+            _logger.info("[StateSync] HA disabled — local-only state")
+            return
+        try:
+            endpoints = list(self._flags.current.ha.etcd_endpoints)
+            host, port_str = endpoints[0].split(":")
+            import etcd3
+            self._client = etcd3.client(host=host, port=int(port_str))
+            _logger.info(f"[StateSync] Connected to etcd at {endpoints[0]} ✓")
+        except ImportError:
+            _logger.warning("[StateSync] etcd3 not installed — local-only state")
+            self._enabled = False
+        except Exception as exc:
+            _logger.error(f"[StateSync] etcd connect failed: {exc}")
+            self._enabled = False
+
+    async def put(self, key: str, value: Any) -> None:
+        with self._store_lock:
+            self._local_store[key] = value
+        if self._enabled and self._client:
+            try:
+                data = json.dumps(value)
+                await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: self._client.put(key, data)
+                )
+            except Exception as exc:
+                _logger.warning(f"[StateSync] etcd put failed: {exc}")
+
+    async def get(self, key: str, default: Any = None) -> Any:
+        with self._store_lock:
+            if key in self._local_store:
+                return self._local_store[key]
+        if self._enabled and self._client:
+            try:
+                value, _ = await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: self._client.get(key)
+                )
+                if value:
+                    parsed = json.loads(value.decode())
+                    with self._store_lock:
+                        self._local_store[key] = parsed
+                    return parsed
+            except Exception:
+                pass
+        return default
+
+    async def sync_blocked_ip(self, ip: str, reason: str, duration_s: int = 3600) -> None:
+        await self.put(f"blocked:{ip}", {
+            "ip": ip, "reason": reason,
+            "expires_at": time.time() + duration_s,
+        })
+
+    async def is_ip_blocked_cluster(self, ip: str) -> bool:
+        data = await self.get(f"blocked:{ip}")
+        if not data:
+            return False
+        return data.get("expires_at", 0) > time.time()
+
+    def get_stats(self) -> dict:
+        with self._store_lock:
+            return {
+                "ha_enabled":     self._enabled,
+                "local_keys":     len(self._local_store),
+                "etcd_connected": self._client is not None,
+            }

@@ -29,10 +29,15 @@ class ThreatContext:
 class MitigationOrchestrator:
     """Coordinates complex automated responses to active threats."""
     
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: Optional[logging.Logger] = None, ebpf_engine: Optional[Any] = None):
         self.logger = logger or logging.getLogger(self.__class__.__name__)
         self.active_mitigations: Dict[str, ThreatContext] = {}
         self.whitelisted_ips = {"127.0.0.1", "0.0.0.0"}
+        
+        # Hard-link to eBPF for zero-latency blocking offloading
+        self.ebpf_engine = ebpf_engine
+        if not self.ebpf_engine:
+            self.logger.warning("No eBPF engine provided. Hardware blocking falls back to simulation.")
         
     async def execute_mitigation(self, context: ThreatContext) -> bool:
         """Execute a mitigation action against a target."""
@@ -69,19 +74,29 @@ class MitigationOrchestrator:
             return False
             
     async def _isolate_host(self, ip: str):
-        """Put host in a restricted VLAN/sandbox (Simulated)."""
-        self.logger.info(f"[Action] Host {ip} isolated from production network.")
-        await asyncio.sleep(0.1)
+        """Put host in a restricted VLAN/sandbox."""
+        self.logger.info(f"[Action] Host {ip} isolated from production network via MFA lockdown.")
+        await self._require_mfa(ip)
         
     async def _block_ip(self, ip: str):
-        """Block IP directly via firewall/iptables (Simulated)."""
-        self.logger.info(f"[Action] IP {ip} added to global blocklist.")
-        await asyncio.sleep(0.1)
+        """Block IP directly via eBPF/XDP hardware acceleration natively without iptables overhead."""
+        engine = self.ebpf_engine
+        if engine:
+            self.logger.info(f"[Action] Offloading IP block ({ip}) to Hardware eBPF engine.")
+            await engine.add_blocked_ip(ip)
+        else:
+            self.logger.info(f"[Action] IP {ip} added to global blocklist (Simulated without eBPF).")
+            await asyncio.sleep(0.1)
         
     async def _degrade_connection(self, ip: str):
-        """Throttle traffic severely instead of blocking (Simulated)."""
-        self.logger.info(f"[Action] Connection for {ip} throttled to 10kbps.")
-        await asyncio.sleep(0.1)
+        """Throttle traffic severely instead of blocking."""
+        engine = self.ebpf_engine
+        if engine:
+            self.logger.info(f"[Action] Offloading Rate-limit throttle for ({ip}) to eBPF engine.")
+            await engine.set_rate_limit(pps=5, burst=10)
+        else:
+            self.logger.info(f"[Action] Connection for {ip} throttled to 10kbps (Simulated).")
+            await asyncio.sleep(0.1)
         
     async def _kill_sessions(self, ip: str):
         """Terminate active stateful sessions (Simulated)."""

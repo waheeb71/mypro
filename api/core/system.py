@@ -101,7 +101,7 @@ async def run_system_script(request_body: ScriptRequest, token: dict = Depends(r
     if request_body.script_name not in allowed_scripts:
         raise HTTPException(status_code=403, detail="Script execution forbidden or unrecognized.")
         
-    scripts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "scripts")
+    scripts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "scripts")
     script_path = os.path.join(scripts_dir, request_body.script_name)
     
     if not os.path.exists(script_path):

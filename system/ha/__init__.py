@@ -1,12 +1,5 @@
-"""
-Enterprise CyberNexus - High Availability (HA)
+"""CyberNexus NGFW — system/ha package"""
+from .leader_election import LeaderElection
+from .state_sync import StateSynchronizer, StateSyncManager
 
-Provides Active-Passive clustering capabilities.
-"""
-
-from .heartbeat import HAManager, NodeState
-
-__all__ = [
-    'HAManager',
-    'NodeState'
-]
+__all__ = ["LeaderElection", "StateSynchronizer", "StateSyncManager"]

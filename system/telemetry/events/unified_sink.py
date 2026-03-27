@@ -73,27 +73,12 @@ class UnifiedEventSink:
     Unified Event Sink for Enterprise CyberNexus
     
     Receives events from all traffic paths and forwards them
-    to configured backends.
-    
-    Usage:
-        sink = UnifiedEventSink(config)
-        await sink.start()
-        
-        # Submit single event
-        await sink.submit_event(event)
-        
-        # Submit batch
-        await sink.batch_submit([event1, event2, ...])
-        
-        await sink.stop()
+    to configured backends and Real-Time Observers (ex: Correlation Engine).
     """
     
     def __init__(self, config: SinkConfig):
         """
         Initialize Unified Event Sink
-        
-        Args:
-            config: Sink configuration
         """
         self.config = config
         self.logger = logger
@@ -102,8 +87,9 @@ class UnifiedEventSink:
         self._buffer: List[EventSchema] = []
         self._buffer_lock = asyncio.Lock()
         
-        # Backends
+        # Backends & Observers
         self._backends: List[EventBackend] = []
+        self._observers: List[callable] = []
         
         # Background tasks
         self._flush_task: Optional[asyncio.Task] = None
@@ -121,6 +107,11 @@ class UnifiedEventSink:
         self._stats_lock = asyncio.Lock()
         
         self.logger.info(f"Initialized UnifiedEventSink with buffer_size={config.buffer_size}")
+
+    def register_observer(self, callback: callable):
+        """Register an async callback for real-time event processing."""
+        self._observers.append(callback)
+        self.logger.info(f"Registered internal observer: {callback.__name__}")
     
     async def start(self):
         """Start the event sink and background tasks"""
@@ -133,7 +124,7 @@ class UnifiedEventSink:
         self._running = True
         self._flush_task = asyncio.create_task(self._flush_loop())
         
-        self.logger.info(f"✅ Unified Event Sink started with {len(self._backends)} backends")
+        self.logger.info(f"✅ Unified Event Sink started with {len(self._backends)} backends and {len(self._observers)} observers")
     
     async def stop(self):
         """Stop the event sink and flush remaining events"""
@@ -170,6 +161,13 @@ class UnifiedEventSink:
         Args:
             event: Event to submit
         """
+        # Dispatch to real-time observers FIRST (for instant mitigation)
+        for observer in self._observers:
+            try:
+                await observer(event)
+            except Exception as e:
+                self.logger.error(f"Observer {observer.__name__} failed processing event: {e}", exc_info=True)
+
         async with self._buffer_lock:
             self._buffer.append(event)
             

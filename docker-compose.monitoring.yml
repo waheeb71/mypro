@@ -1,0 +1,112 @@
+version: "3.9"
+# ============================================================
+# CyberNexus NGFW — Observability Monitoring Stack
+# ============================================================
+# Start with: docker-compose -f docker-compose.monitoring.yml up -d
+#
+# Access:
+#   Grafana:     http://localhost:3001  (admin / ngfw-admin)
+#   Prometheus:  http://localhost:9090
+#   Loki:        http://localhost:3100
+# ============================================================
+
+networks:
+  ngfw_monitoring:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+
+services:
+
+  # ── Prometheus — Metrics Collection ──────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: ngfw_prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    networks:
+      - ngfw_monitoring
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Grafana — Dashboards ──────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: ngfw_grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=ngfw-admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - ngfw_monitoring
+    depends_on:
+      - prometheus
+      - loki
+
+  # ── Loki — Log Aggregation ────────────────────────────────────
+  loki:
+    image: grafana/loki:2.9.6
+    container_name: ngfw_loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./config/monitoring/loki.yml:/etc/loki/local-config.yaml:ro
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - ngfw_monitoring
+
+  # ── Promtail — Log Shipper (NGFW → Loki) ─────────────────────
+  promtail:
+    image: grafana/promtail:2.9.6
+    container_name: ngfw_promtail
+    restart: unless-stopped
+    volumes:
+      - /var/log:/var/log:ro
+      - ./logs:/ngfw/logs:ro
+      - ./config/monitoring/promtail.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - ngfw_monitoring
+    depends_on:
+      - loki
+
+  # ── Tempo — Distributed Tracing ──────────────────────────────
+  # Enabled when features.observability.tracing = true
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: ngfw_tempo
+    restart: unless-stopped
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    volumes:
+      - ./config/monitoring/tempo.yml:/etc/tempo/config.yml:ro
+    command: ["-config.file=/etc/tempo/config.yml"]
+    networks:
+      - ngfw_monitoring
+    profiles:
+      - tracing   # Start with: docker-compose --profile tracing up

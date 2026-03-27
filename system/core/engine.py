@@ -213,10 +213,19 @@ class CyberNexusApplication:
                         self.policy_engine.set_rl_optimizer(self.rl_optimizer)
 
                 self.attack_forecaster = AttackForecaster()
+                
+                # 🧠 Initialize Predictive System-Wide Correlation Engine
+                from system.ml_core.predictive_ai import PredictiveCorrelationEngine
+                self.orchestrator = MitigationOrchestrator(logger=logger, ebpf_engine=self.xdp_engine)
+                self.predictive_correlator = PredictiveCorrelationEngine(orchestrator=self.orchestrator, logger=logger)
+                
+                # Wire the correlator as a real-time observer to the Event Sink
+                if self.event_sink:
+                    self.event_sink.register_observer(self.predictive_correlator.process_event)
+                    logger.info("✅ Correlation Engine wired to Unified Event Sink")
 
                 self.vulnerability_predictor = VulnerabilityPredictor()
                 self.uba = UserBehaviorAnalytics(self.db)
-                self.orchestrator = MitigationOrchestrator()
                 self.recovery_manager = RecoveryManager()
                 
                 if self.flow_tracker:

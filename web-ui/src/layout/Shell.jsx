@@ -51,10 +51,17 @@ const NAV_GROUPS = [
     ]
   },
   {
+    label: 'Enterprise Control',
+    items: [
+      { to: '/system-health', icon: Activity, label: 'System Health' },
+      { to: '/config-manager', icon: Server, label: 'Config Manager' },
+    ]
+  },
+  {
     label: 'Administration',
     items: [
       { to: '/system', icon: Settings, label: 'System' },
-      { to: '/settings', icon: Database, label: 'Raw Configs' },
+      { to: '/settings', icon: Database, label: 'Global Settings' },
       { to: '/users', icon: User, label: 'Users & RBAC' },
     ]
   }

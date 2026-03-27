@@ -32,9 +32,13 @@ class PluginPriority(IntEnum):
     LOWEST = 100
 
 
+from system.inspection_core.context.identity import IdentityContext
+from system.inspection_core.context.risk import RiskContext
+from system.inspection_core.context.session import SessionContext
+
 @dataclass
 class InspectionContext:
-    """Context information for inspection"""
+    """Context information for inspection (The Context Bus)"""
     src_ip: str
     dst_ip: str
     src_port: int
@@ -43,8 +47,23 @@ class InspectionContext:
     direction: str  # 'inbound', 'outbound'
     flow_id: str  # Unique flow identifier
     timestamp: float
-    metadata: Dict[str, Any]
+    
+    # Optional nested contexts for advanced NGFW correlation
+    identity: Optional[IdentityContext] = None
+    risk: Optional[RiskContext] = None
+    session: Optional[SessionContext] = None
+    
+    metadata: Dict[str, Any] = None
 
+    def __post_init__(self):
+        if self.metadata is None:
+            self.metadata = {}
+        if self.identity is None:
+            self.identity = IdentityContext()
+        if self.risk is None:
+            self.risk = RiskContext()
+        if self.session is None:
+            self.session = SessionContext()
 
 
 @dataclass
@@ -88,6 +107,25 @@ class InspectionResult:
 
 
 
+class AbstractEnricher(ABC):
+    """
+    Base class for Context Enrichers.
+    Enrichers run BEFORE any inspection plugins to populate Identity, Risk, and Session contexts.
+    """
+    
+    def __init__(self, name: str, logger: Optional[logging.Logger] = None):
+        self.name = name
+        self.logger = logger or logging.getLogger(f"{self.__class__.__name__}")
+
+    @abstractmethod
+    def enrich(self, context: InspectionContext) -> None:
+        """Populate the InspectionContext in-place."""
+        pass
+        
+    async def enrich_async(self, context: InspectionContext) -> None:
+        """Asynchronously populate the InspectionContext."""
+        import asyncio
+        await asyncio.to_thread(self.enrich, context)
 
 class InspectorPlugin(ABC):
     """

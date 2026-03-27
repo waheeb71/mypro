@@ -1,0 +1,536 @@
+# تحليل معماري شامل — Enterprise CyberNexus NGFW
+## نظام جدار الحماية الذكي من الجيل التالي
+
+---
+
+> **المشروع:** CyberNexus Enterprise Next-Generation Firewall (NGFW)
+> **المرحلة:** التحليل المعماري الشامل (System Architecture Analysis)
+> **المسار:** `F:\enterprise_ngfw`
+
+---
+
+## 1. نظرة عامة على النظام
+
+CyberNexus هو جدار حماية ذكي من الجيل التالي (AI-Powered NGFW) مصمم للشبكات المؤسسية. يجمع بين قدرات **الفحص العميق للحزم (DPI)** و**التحليل السلوكي (UBA)** و**الذكاء الاصطناعي التنبؤي (Predictive AI)** في منصة موحدة يمكن إدارتها عبر لوحة تحكم ويب متكاملة.
+
+### الأهداف الرئيسية:
+| الهدف | الوصف |
+|---|---|
+| **التفتيش العميق** | تحليل الحزم حتى طبقة التطبيق (Layer 7) |
+| **Zero-Trust Architecture** | عدم الثقة بأي منفذ أو هوية دون التحقق |
+| **تسريع العتاد (eBPF)** | معالجة الحزم على مستوى الـ Kernel لأقصى أداء |
+| **الذكاء الاصطناعي** | نماذج ML للكشف عن التهديدات غير المعروفة (Zero-Day) |
+| **الإدارة الموحدة** | REST API & React Dashboard لإدارة جميع المكونات |
+
+---
+
+## 2. المعمارية الطبقية (Layered Architecture)
+
+```mermaid
+graph TD
+    subgraph "Presentation Layer — Web-UI (React + Vite)"
+        WUI["🖥️ React Dashboard\n(web-ui/src)"]
+        API_JS["⚙️ api.js Service Layer\n(Axios HTTP Clients)"]
+        WUI --> API_JS
+    end
+
+    subgraph "API Gateway Layer — FastAPI"
+        REST["🔌 REST API (api/rest/main.py)\nFastAPI + JWT Auth + Rate Limiting"]
+        AUTH_API["🔐 /api/v1/auth"]
+        SYS_API["⚙️ /api/v1/system"]
+        OPT_API["🧠 /api/v1/optimizer"]
+        TELM_API["📊 /api/v1/telemetry"]
+        REST --> AUTH_API
+        REST --> SYS_API
+        REST --> OPT_API
+        REST --> TELM_API
+    end
+
+    subgraph "System Core Layer — Backbone"
+        ENGINE["🏗️ CyberNexusApplication\n(system/core/engine.py)"]
+        PIPELINE["🔄 Inspection Pipeline\n(inspection_core/framework/pipeline.py)"]
+        CONTEXT["📦 InspectionContext\n(Identity + Risk + Session)"]
+        DB["🗄️ SQLAlchemy ORM\n(system/database)"]
+        ENGINE --> PIPELINE
+        PIPELINE --> CONTEXT
+        ENGINE --> DB
+    end
+
+    subgraph "Modules Layer — DPI Engines"
+        FW["🛡️ Firewall"]
+        WAF["🌐 WAF"]
+        IDS["🚨 IDS/IPS"]
+        MAL["🦠 Malware AV"]
+        DLP["📄 DLP"]
+        DNS["🔍 DNS Security"]
+        UBA["👤 UBA"]
+        AI["🤖 Predictive AI"]
+    end
+
+    subgraph "Acceleration Layer — eBPF Kernel"
+        EBPF["⚡ XDP Engine\n(acceleration/ebpf)"]
+        BPF_MAP["🗺️ BPF_BLOCKED_IPS_HASH\n(Kernel Map)"]
+        EBPF --> BPF_MAP
+    end
+
+    subgraph "ML Layer — Neural Networks"
+        MODELS["🧬 Trained Models\n(ml/models)"]
+        MALWARE_MDL["🦠 MalwareClassifier"]
+        NLP_MDL["📝 WAF NLP Model"]
+        MODELS --> MALWARE_MDL
+        MODELS --> NLP_MDL
+    end
+
+    API_JS -->|"HTTPS Requests"| REST
+    SYS_API --> ENGINE
+    ENGINE --> EBPF
+    PIPELINE -->|"Plugin Execution"| FW & WAF & IDS & MAL & DLP & DNS & UBA & AI
+    MAL --> MALWARE_MDL
+    WAF --> NLP_MDL
+    AI -->|"Block Signal"| EBPF
+```
+
+---
+
+## 3. دورة حياة الحزمة (Packet Lifecycle)
+
+### 3.1 المخطط التسلسلي الكامل
+
+```mermaid
+sequenceDiagram
+    participant NIC   as 🔌 Network Interface Card
+    participant EBPF  as ⚡ eBPF / XDP Engine
+    participant PROXY as 🔄 Transparent Proxy
+    participant CTX   as 📦 Context Enricher
+    participant PIPE  as 🔄 Inspection Pipeline
+    participant MODS  as 🔍 DPI Modules (FW/WAF/DLP...)
+    participant AI    as 🤖 Predictive AI
+    participant NET   as 🌐 Internet
+
+    NIC->>EBPF: Incoming Packet
+    alt IP in Blocklist
+        EBPF-->>NIC: XDP_DROP (Hardware Kill)
+    else Pass
+        EBPF->>PROXY: XDP_PASS
+    end
+
+    PROXY->>PROXY: iptables REDIRECT (Port 80→8080)
+    PROXY->>CTX: Raw TCP Stream
+
+    Note over CTX: Inject Identity (JWT/Device)<br/>Inject Risk Score (UBA)<br/>Inject Session Metadata (GeoIP)
+
+    CTX->>PIPE: Enriched InspectionContext
+
+    loop Per Module (sorted by Priority)
+        PIPE->>MODS: inspect(context)
+        MODS-->>PIPE: InspectionResult (ALLOW/DROP/score)
+    end
+
+    PIPE->>AI: Telemetry Meta-Data
+    AI-->>EBPF: Block Signal (if threat correlated)
+
+    alt All Modules → ALLOW
+        PIPE->>PROXY: Forward to Internet
+        PROXY->>NET: Egress (NAT Masquerade)
+        NET-->>PROXY: Response
+        PROXY-->>NIC: Response to Client
+    else Any Module → DROP
+        PIPE-->>NIC: 403 Block Page
+    end
+```
+
+### 3.2 دورة حياة مبسّطة (Simplified Flow)
+
+```mermaid
+flowchart LR
+    A([كابل الشبكة\nNIC]) --> B{eBPF\nFast-Path}
+    B -->|محظور| Z([❌ XDP_DROP\nزمن: ~1µs])
+    B -->|مسموح| C[Transparent Proxy\nاعتراض المرور]
+    C --> D[Context Enricher\nإضافة الهوية والمخاطر]
+    D --> E{Inspection\nPipeline}
+    E --> F[🛡️ Firewall ACL]
+    E --> G[🌐 WAF]
+    E --> H[🦠 Malware AV]
+    E --> I[📄 DLP]
+    E --> J[🤖 Predictive AI]
+    F & G & H & I & J --> K{القرار\nالنهائي}
+    K -->|ALLOW| L([🌐 الإنترنت\nعبر NAT])
+    K -->|DROP| M([🚫 صفحة الحظر])
+```
+
+---
+
+## 4. هيكل المكونات (Component Structure)
+
+### 4.1 الأنظمة الفرعية الـ 12 لـ [system/](file:///F:/enterprise_ngfw/api/core/system.py#97-130)
+
+```mermaid
+mindmap
+  root((system/))
+    inspection_core
+      pipeline.py
+      plugin_base.py
+      context/
+        identity.py
+        risk.py
+        session.py
+    core
+      engine.py
+      router.py
+      flow_tracker.py
+      module_manager.py
+    networking
+      transparent_proxy.py
+      nat_manager.py
+    auth
+      jwt_manager.py
+      rbac.py
+      pki/ CA Certificates
+    database
+      database.py
+      models.py
+    response
+      response_orchestrator.py
+      ebpf_ipc.py
+    telemetry
+      unified_sink.py
+      memory_handler.py
+    ha
+      sync_manager.py
+    ml_core
+      model_loader.py
+      threshold_config.py
+    policy
+      policy_engine.py
+    siem
+      siem_exporter.py
+    config
+      base.yaml
+      path_manager.py
+    firewall
+      optimizer.py
+```
+
+### 4.2 الـ 15 وحدة تفتيش في [modules/](file:///F:/enterprise_ngfw/web-ui/src/services/api.js#48-49)
+
+```mermaid
+graph LR
+    subgraph "Threat Management"
+        FW[🛡️ firewall]
+        WAF[🌐 waf]
+        IDS[🚨 ids_ips]
+        MAL[🦠 malware_av]
+        DLP[📄 dlp]
+    end
+    
+    subgraph "Network Services"
+        DNS[🔍 dns_security]
+        VPN[🔒 vpn]
+        PROXY[🔄 proxy]
+        EMAIL[📧 email_security]
+        WF[🌐 web_filter]
+        QOS[⚖️ qos]
+    end
+    
+    subgraph "Deep Inspection"
+        HTTP[🔍 http_inspection]
+        SSL[🔐 ssl_inspection]
+    end
+    
+    subgraph "Intelligence"
+        UBA[👤 uba]
+        PAI[🤖 predictive_ai]
+    end
+
+    PIPELINE["🔄 Inspection Pipeline\n(system/inspection_core)"] -->|"Priority Queue"| FW & WAF & IDS & MAL & DLP
+    PIPELINE --> DNS & VPN & PROXY & EMAIL & WF & QOS
+    PIPELINE --> HTTP & SSL
+    PIPELINE --> UBA & PAI
+```
+
+---
+
+## 5. نموذج الهوية والتحقق (Zero-Trust Identity Model)
+
+```mermaid
+graph TD
+    REQ["📨 HTTP Request\nIncoming"] --> AGG["🔀 Identity Aggregator"]
+    
+    subgraph "Identity Sources"
+        JWT["🎫 JWT Token\n(jwt_enricher.py)"]
+        DEV["💻 Device Fingerprint\n(device_enricher.py)"]
+        UBA2["👤 UBA Behavioral Score\n(uba_enricher.py)"]
+        GEO["🌍 GeoIP\n(session.py)"]
+    end
+    
+    JWT --> AGG
+    DEV --> AGG
+    UBA2 --> AGG
+    GEO --> AGG
+
+    AGG --> CTX["📦 InspectionContext\n(Unified Identity Object)"]
+    
+    CTX --> EVAL{"Risk Evaluation"}
+    EVAL -->|"Risk < 0.3"| LOW["✅ Full Access"]
+    EVAL -->|"0.3 ≤ Risk < 0.7"| MED["⚠️ Limited Access\n+ Step-up Auth"]
+    EVAL -->|"Risk ≥ 0.7"| HIGH["🚫 Block + Alert\n+ Quarantine"]
+```
+
+---
+
+## 6. نموذج الصلاحيات (RBAC Model)
+
+```mermaid
+graph TD
+    subgraph "User Roles"
+        SADMIN["👑 Super Admin\nFull Control"]
+        ADMIN["🔧 Admin\nConfig + Policy"]
+        OPER["👁️ Operator\nView + Logs"]
+        AUDIT["📋 Auditor\nRead-Only"]
+    end
+
+    subgraph "Protected Resources"
+        CONFIG["⚙️ System Config"]
+        RULES["🛡️ Firewall Rules"]
+        USERS["👤 User Management"]
+        LOGS["📄 Logs & Telemetry"]
+        ML["🤖 ML Thresholds"]
+        PKI["🔑 PKI Certificates"]
+        OPT["🧠 Policy Optimizer"]
+    end
+
+    SADMIN -->|ALL| CONFIG & RULES & USERS & LOGS & ML & PKI & OPT
+    ADMIN -->|Write| RULES & ML & OPT
+    ADMIN -->|Read| CONFIG & LOGS
+    OPER -->|Read| RULES & LOGS & ML
+    AUDIT -->|Read-Only| LOGS
+```
+
+---
+
+## 7. معمارية الـ API (API Architecture)
+
+### 7.1 هيكل بنية مجلد الـ API
+
+```mermaid
+graph TD
+    API["📁 api/"] --> REST["📁 rest/\nFastAPI Application"]
+    API --> CORE_API["📁 core/\nsystem.py & interfaces.py"]
+    API --> AUTH_API["📁 auth/\nrouter.py (PKI/JWT/RBAC)"]
+    API --> TELM_API["📁 telemetry/\nrouter.py (Logs)"]
+    API --> HA_API["📁 ha/\nrouter.py (Cluster Sync)"]
+    API --> ML_API["📁 ml_core/\nrouter.py (Thresholds)"]
+    API --> RESP_API["📁 response/\nrouter.py (eBPF Blocks)"]
+    API --> CLI_API["📁 cli/\nCommands"]
+
+    REST --> MAIN["main.py\n(App Factory + Router Registry)"]
+    REST --> ENDPOINTS["📁 endpoints/"]
+    ENDPOINTS --> AUTH_EP["auth_routes.py"]
+    ENDPOINTS --> CONFIG_EP["config_routes.py"]
+    ENDPOINTS --> STATUS_EP["status_routes.py"]
+    ENDPOINTS --> OPT_EP["optimizer_routes.py ⭐NEW"]
+```
+
+### 7.2 REST Endpoints المتاحة
+
+| Endpoint | Method | الوصف | الصلاحية |
+|---|---|---|---|
+| `/api/v1/auth/login` | POST | تسجيل الدخول + JWT | عام |
+| `/api/v1/system/status` | GET | حالة المحرك | Operator |
+| `/api/v1/system/interfaces` | GET | كروت الشبكة | Admin |
+| `/api/v1/system/interfaces/assign` | POST | تعيين دور الكرت | Admin |
+| `/api/v1/config` | GET/PUT | قراءة/تعديل الإعدادات | Admin |
+| `/api/v1/ml-core/config` | GET/PUT | عتبات الذكاء الاصطناعي | Admin |
+| `/api/v1/response/blocks` | GET/DELETE | قائمة الحظر الفوري | Admin |
+| `/api/v1/ha/status` | GET | حالة الـ Cluster | Operator |
+| `/api/v1/ha/sync` | POST | مزامنة يدوية | Admin |
+| `/api/v1/certificates/ca/info` | GET | معلومات الشهادة | Admin |
+| `/api/v1/certificates/ca/generate` | POST | إنشاء Root CA جديد | Super Admin |
+| `/api/v1/optimizer/suggestions` | GET | مقترحات الـ Optimizer | Admin |
+| `/api/v1/optimizer/apply` | POST | تطبيق التحسينات | Admin |
+| `/api/v1/telemetry/logs` | GET | سجلات النظام | Operator |
+
+---
+
+## 8. طبقة التسريع (eBPF / Acceleration Layer)
+
+```mermaid
+graph TD
+    subgraph "Kernel Space (Ring 0)"
+        XDP["⚡ XDP Hook\n(eXpress Data Path)"]
+        BPF_MAP["🗺️ BPF_HASH Map\n(Blocked IPs)"]
+        XDP -->|"Lookup O(1)"| BPF_MAP
+    end
+
+    subgraph "User Space (Python)"
+        PY_RESP["🐍 response_orchestrator.py"]
+        PY_XDP["🐍 xdp_engine.py"]
+        IPC["📡 Unix Socket IPC\n(Fast-IPC Bridge)"]
+        PY_RESP --> IPC --> PY_XDP
+    end
+
+    subgraph "Triggers (Who sends block signals)"
+        WAF_T["🌐 WAF → SQLi/XSS detected"]
+        AI_T["🤖 Predictive AI → Correlated APT"]
+        IDS_T["🚨 IDS → Port Scan detected"]
+        FW_T["🛡️ Firewall → ACL IP Violation"]
+    end
+
+    WAF_T & AI_T & IDS_T & FW_T -->|"Block Signal"| PY_RESP
+    PY_XDP -->|"bpf_map_update_elem()"| BPF_MAP
+    BPF_MAP -->|"Next Packet → XDP_DROP ⚡"| XDP
+```
+
+**النتيجة:** الحزمة الثانية للمهاجم تُسقط في **~1 ميكروثانية** على مستوى كرت الشبكة مباشرة، دون أن تصل إلى بايثون.
+
+---
+
+## 9. محرك الارتباط التنبؤي (Correlation Engine)
+
+```mermaid
+flowchart TB
+    subgraph "Event Sources"
+        DNS_E["🔍 DNS: Suspicious query\nScore = 30%"]
+        FW_E["🛡️ Firewall: Unusual port\nScore = 30%"] 
+        UBA_E["👤 UBA: Off-hours login\nScore = 30%"]
+    end
+
+    subgraph "system/core/correlation_engine"
+        SINK["📥 Event Sink\n(telemetry/unified_sink.py)"]
+        CORR["🧠 CorrelationEngine\ncorrelation_engine.py"]
+        RULES["📋 Correlation Rules\nAPT Rule: DNS+FW+UBA → 90%"]
+        WINDOW["⏱️ Time Window\n300 seconds memory"]
+    end
+
+    DNS_E & FW_E & UBA_E -->|"Emit TelemetryEvent"| SINK
+    SINK --> CORR
+    CORR --> RULES
+    CORR --> WINDOW
+    RULES -->|"Combined Score ≥ 0.85"| ALERT["🚨 Global Block\n+ Admin Alert\n+ eBPF Inject"]
+```
+
+---
+
+## 10. المُحسِّن الذكي (Smart Policy Optimizer) — المرحلة السادسة
+
+```mermaid
+flowchart TD
+    ADMIN["👨‍💻 Admin Clicks:\n'Run Analysis'"] --> API2["GET /api/v1/optimizer/suggestions"]
+    API2 --> OPT["🧮 FirewallOptimizer\n(system/firewall/optimizer.py)"]
+    
+    subgraph "Heuristic Algorithms (Deterministic)"
+        S1["1️⃣ Shadow Rule Detection\n∀ rule_b: subnet(b) ⊆ subnet(a)\n→ rule_b never matches = delete"]
+        S2["2️⃣ Dead Rule Eviction\nhit_count == 0\n→ suggest disable"]
+        S3["3️⃣ Redundancy Merging\nSame dest+port+action\n→ merge into IP Group"]
+    end
+
+    OPT --> S1 & S2 & S3
+    S1 & S2 & S3 --> REPORT["📋 Optimization Report\n{severity, reason, action}"]
+    REPORT --> UI["🖥️ Optimizer.jsx\nInteractive Diff View"]
+    UI -->|"Admin Accepts"| APPLY["POST /api/v1/optimizer/apply\n→ Update base.yaml\n→ Hot-Reload Engine"]
+```
+
+---
+
+## 11. معمارية الواجهة الأمامية (Frontend Architecture)
+
+```mermaid
+graph TD
+    subgraph "web-ui/src/"
+        APP["App.jsx\n(React Router DOM)"]
+        SHELL["Shell.jsx\n(Layout + Navigation)"]
+        
+        subgraph "modules/"
+            DASH["Dashboard.jsx"]
+            FW_UI["firewall/\nFirewall.jsx\nOptimizer.jsx ⭐"]
+            SYS_UI["system/System.jsx\n(Interfaces + HA)"]
+            SET_UI["settings/Settings.jsx\nMLCoreSettings.jsx ⭐\nActiveBlocks.jsx ⭐\nPKISettings.jsx ⭐"]
+            WAF_UI["waf/WAF.jsx"]
+            IDS_UI["ids_ips/IDS.jsx"]
+            DNS_UI["dns_security/\nDNSSecurity.jsx"]
+        end
+        
+        subgraph "services/"
+            API_SVC["api.js\n(Centralized Axios)\n20+ API clients"]
+        end
+        
+        subgraph "hooks/"
+            AUTH_H["useAuth.js\n(JWT context)"]
+            QUERY_H["React Query\n(Cache + Mutations)"]
+        end
+    end
+
+    APP --> SHELL
+    SHELL -->|"Route: /"| DASH
+    SHELL -->|"Route: /firewall"| FW_UI
+    SHELL -->|"Route: /system"| SYS_UI
+    SHELL -->|"Route: /settings"| SET_UI
+    FW_UI & SYS_UI & SET_UI & WAF_UI & IDS_UI & DNS_UI --> API_SVC
+    API_SVC -->|"HTTP + JWT Bearer"| REST_BACKEND["🔌 FastAPI Backend"]
+    AUTH_H --> API_SVC
+```
+
+---
+
+## 12. ملخص مراحل التكامل الست (Master Integration Timeline)
+
+```mermaid
+gantt
+    title مراحل تطور نظام CyberNexus NGFW
+    dateFormat  YYYY-MM-DD
+    section Phase 1 — Context Bus
+    InspectionContext Redesign           :done, p1, 2025-01-01, 7d
+    UBA / Device / JWT Enrichers         :done, p1b, after p1, 5d
+
+    section Phase 2 — Hardware Sync
+    Fast-IPC Bridge (eBPF)               :done, p2, after p1b, 5d
+    Response Orchestrator Integration    :done, p2b, after p2, 3d
+
+    section Phase 3 — Correlation Brain
+    Threat Correlation Engine            :done, p3, after p2b, 7d
+    Multi-stage APT Detection Rules      :done, p3b, after p3, 4d
+
+    section Phase 4 — Settings Architecture
+    Advanced Identity (JWT + Device)     :done, p4, after p3b, 5d
+    Unified Settings API Design          :done, p4b, after p4, 3d
+
+    section Phase 5 — Web-UI Integration
+    API Client Layer (api.js)            :done, p5, after p4b, 4d
+    System.jsx (Interfaces + HA)         :done, p5b, after p5, 3d
+    Settings Panels (ML, PKI, Blocks)    :done, p5c, after p5b, 4d
+
+    section Phase 6 — Smart Optimizer
+    Heuristic Math Engine                :done, p6, after p5c, 3d
+    REST API + Frontend UI               :done, p6b, after p6, 3d
+```
+
+---
+
+## 13. المقاييس الكمية للنظام
+
+| المقياس | القيمة |
+|---|---|
+| **عدد الوحدات (Modules)** | 15 وحدة تفتيش |
+| **عدد الأنظمة الفرعية (System Sub-systems)** | 13 نظام فرعي |
+| **عدد نقاط REST API** | 30+ endpoint |
+| **طبقات معمارية** | 5 طبقات (eBPF → System → Modules → API → Web-UI) |
+| **مراحل التكامل** | 6 مراحل |
+| **خوارزميات الـ Smart Optimizer** | 3 خوارزميات رياضية حتمية |
+| **بروتوكولات الهوية** | 4 مصادر (JWT + Device + UBA + GeoIP) |
+| **نماذج الذكاء الاصطناعي** | 3 نماذج (Malware, WAF-NLP, Predictive) |
+| **زمن الحظر العتادي (eBPF)** | < 1 ميكروثانية |
+
+---
+
+## 14. الاستنتاجات (Conclusions)
+
+يمثل نظام CyberNexus NGFW نقلة نوعية في تصميم جدران الحماية المؤسسية من خلال:
+
+1. **التكامل العمودي الكامل**: من طبقة الـ Kernel (eBPF) إلى طبقة الواجهة الرسومية (React), بدون فجوات معمارية.
+2. **الذكاء السياقي**: كل قرار يُتخذ بناءً على سياق متعدد المصادر (الهوية + السلوك + الجلسة + المخاطر التاريخية).
+3. **الأداء في مقابل الذكاء**: تحقيق معادلة صعبة بين سرعة معالجة الـ~1Gbps والتحليل العميق بالذكاء الاصطناعي.
+4. **قابلية الإدارة**: لوحة تحكم موحدة تجمع بين إدارة الهويات (PKI)، وتحسين السياسات (Smart Optimizer)، ومراقبة النظام بالزمن الحقيقي.
+5. **البنية التوسعية (Plugin Architecture)**: إضافة أي وحدة تفتيش جديدة يتطلب فقط إنشاء [router.py](file:///F:/enterprise_ngfw/system/auth/api/router.py) في المجلد المناسب، ويتم تحميلها تلقائياً.
+
+---
+*وثيقة التحليل المعماري — CyberNexus NGFW — 2026*
