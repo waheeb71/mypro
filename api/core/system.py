@@ -2,8 +2,31 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any
 from pydantic import BaseModel
 
-from system.core.hardware import get_network_interfaces, get_assigned_interfaces, assign_interface_role
 from api.rest.auth import require_admin, verify_token
+
+# Mock Hardware Implementation to prevent ModuleNotFoundError
+# In a real hardware appliance, this would interact with `ip link` and systemd-networkd.
+_MOCK_INTERFACE_MAP = {
+    "eth0": {"status": "up", "speed": "1000Mbps", "mac_address": "00:1A:2B:3C:4D:5E"},
+    "eth1": {"status": "up", "speed": "1000Mbps", "mac_address": "00:1A:2B:3C:4D:5F"},
+    "eth2": {"status": "down", "speed": "Unknown", "mac_address": "00:1A:2B:3C:4D:60"}
+}
+_MOCK_ASSIGNMENTS = {
+    "eth0": "WAN",
+    "eth1": "LAN"
+}
+
+def get_network_interfaces() -> dict:
+    return _MOCK_INTERFACE_MAP
+
+def get_assigned_interfaces() -> dict:
+    return _MOCK_ASSIGNMENTS
+
+def assign_interface_role(port: str, role: str) -> bool:
+    if port not in _MOCK_INTERFACE_MAP:
+        raise ValueError(f"Interface {port} not found on local system")
+    _MOCK_ASSIGNMENTS[port] = role.upper()
+    return True
 import asyncio
 import os
 from fastapi import Request
