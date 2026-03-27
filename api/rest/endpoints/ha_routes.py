@@ -5,7 +5,7 @@ PUT  /api/v1/ha/sync   -> Force manual sync
 """
 import logging
 from fastapi import APIRouter, HTTPException, Depends, Request
-from api.rest.auth import check_permission
+from api.rest.auth import make_permission_checker
 
 router = APIRouter(prefix="/api/v1/ha", tags=["High Availability"])
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ def _get_app(request: Request):
     return request.app.state.CyberNexus
 
 @router.get("/status")
-async def get_ha_status(request: Request, token: dict = Depends(check_permission("firewall"))):
+async def get_ha_status(request: Request, token: dict = Depends(make_permission_checker("firewall"))):
     """Retrieve current node role and HA status."""
     app = _get_app(request)
     if not getattr(app, "ha_manager", None):
@@ -33,7 +33,7 @@ async def get_ha_status(request: Request, token: dict = Depends(check_permission
     }
 
 @router.post("/sync")
-async def force_sync(request: Request, token: dict = Depends(check_permission("firewall"))):
+async def force_sync(request: Request, token: dict = Depends(make_permission_checker("firewall"))):
     """Force an immediate state synchronization slice."""
     app = _get_app(request)
     if not app.is_ha_master or not getattr(app, "state_sync", None):

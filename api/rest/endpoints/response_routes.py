@@ -7,7 +7,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List, Dict
 
-from api.rest.auth import check_permission
+from api.rest.auth import make_permission_checker
 from system.response.orchestrator import MitigationAction
 
 router = APIRouter(prefix="/api/v1/response", tags=["Response Orchestration"])
@@ -19,7 +19,7 @@ def _get_app(request: Request):
     return request.app.state.CyberNexus
 
 @router.get("/blocks")
-async def list_blocks(request: Request, token: dict = Depends(check_permission("firewall"))):
+async def list_blocks(request: Request, token: dict = Depends(make_permission_checker("firewall"))):
     """Retrieve all IPs currently blocked by the hardware orchestrator."""
     app = _get_app(request)
     if not getattr(app, "orchestrator", None):
@@ -30,7 +30,7 @@ async def list_blocks(request: Request, token: dict = Depends(check_permission("
     return {"active_blocks": list(app.orchestrator.active_mitigations.keys()) if hasattr(app.orchestrator, "active_mitigations") else []}
 
 @router.delete("/blocks/{ip}")
-async def remove_block(request: Request, ip: str, token: dict = Depends(check_permission("firewall"))):
+async def remove_block(request: Request, ip: str, token: dict = Depends(make_permission_checker("firewall"))):
     """Remove a hardware mitigation block for a specific IP."""
     app = _get_app(request)
     if not getattr(app, "orchestrator", None):
