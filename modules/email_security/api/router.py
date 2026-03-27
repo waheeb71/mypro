@@ -11,6 +11,8 @@ Endpoints:
   GET    /whitelist       — Return whitelist (admin/operator)
   POST   /whitelist       — Add entry to whitelist (admin only)
   DELETE /whitelist/{entry} — Remove entry from whitelist (admin only)
+  GET    /stats           — Aggregate inspection statistics from DB
+  GET    /logs            — Recent email inspection log (paginated)
 """
 from __future__ import annotations
 
@@ -318,3 +320,119 @@ async def remove_whitelist_entry(
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ── Stats & Logs Endpoints ────────────────────────────────────────────────────
+
+
+def _get_email_db_session():
+    """Return a direct SQLAlchemy session for EmailLog queries."""
+    from system.database.database import SessionLocal
+    return SessionLocal()
+
+
+@router.get("/stats")
+async def get_stats(token: dict = Depends(require_email)):
+    """
+    Return aggregate email inspection statistics from the EmailLog table.
+    Includes totals, decision breakdown, and top threat categories.
+    """
+    from modules.email_security.models import EmailLog
+    from sqlalchemy import func
+    from datetime import datetime, timedelta
+
+    db = _get_email_db_session()
+    try:
+        total      = db.query(func.count(EmailLog.id)).scalar() or 0
+        blocked    = db.query(func.count(EmailLog.id)).filter(EmailLog.decision == "block").scalar() or 0
+        quarantine = db.query(func.count(EmailLog.id)).filter(EmailLog.decision == "quarantine").scalar() or 0
+        allowed    = db.query(func.count(EmailLog.id)).filter(EmailLog.decision == "allow").scalar() or 0
+        phishing   = db.query(func.count(EmailLog.id)).filter(EmailLog.is_phishing == True).scalar() or 0
+        spam       = db.query(func.count(EmailLog.id)).filter(EmailLog.is_spam == True).scalar() or 0
+
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_total = db.query(func.count(EmailLog.id)).filter(EmailLog.inspected_at >= today_start).scalar() or 0
+        today_blocked = db.query(func.count(EmailLog.id)).filter(
+            EmailLog.inspected_at >= today_start, EmailLog.decision == "block"
+        ).scalar() or 0
+
+        avg_risk = db.query(func.avg(EmailLog.risk_score)).scalar() or 0.0
+
+        # Top 10 blocked senders
+        top_senders = db.query(
+            EmailLog.sender, func.count(EmailLog.id).label("count")
+        ).filter(EmailLog.decision == "block") \
+         .group_by(EmailLog.sender) \
+         .order_by(func.count(EmailLog.id).desc()) \
+         .limit(10).all()
+
+        return {
+            "total_inspected":    total,
+            "total_blocked":      blocked,
+            "total_quarantined":  quarantine,
+            "total_allowed":      allowed,
+            "phishing_detected":  phishing,
+            "spam_detected":      spam,
+            "today_total":        today_total,
+            "today_blocked":      today_blocked,
+            "avg_risk_score":     round(float(avg_risk), 3),
+            "decision_breakdown": {
+                "allow":      allowed,
+                "quarantine": quarantine,
+                "block":      blocked,
+            },
+            "top_blocked_senders": [
+                {"sender": r.sender or "unknown", "count": r.count}
+                for r in top_senders
+            ],
+        }
+    finally:
+        db.close()
+
+
+@router.get("/logs")
+async def get_logs(
+    skip:     int = 0,
+    limit:    int = 50,
+    decision: Optional[str] = None,
+    token:    dict = Depends(require_email),
+):
+    """
+    Return paginated email inspection log.
+
+    Query params:
+      skip      — offset (default 0)
+      limit     — page size (max 200, default 50)
+      decision  — filter by 'allow' | 'quarantine' | 'block'
+    """
+    from modules.email_security.models import EmailLog
+
+    limit = min(limit, 200)
+    db = _get_email_db_session()
+    try:
+        q = db.query(EmailLog).order_by(EmailLog.inspected_at.desc())
+        if decision and decision in ("allow", "quarantine", "block"):
+            q = q.filter(EmailLog.decision == decision)
+        rows = q.offset(skip).limit(limit).all()
+
+        return [
+            {
+                "id":               r.id,
+                "inspected_at":     r.inspected_at.isoformat() if r.inspected_at else None,
+                "sender":           r.sender,
+                "subject":          r.subject,
+                "src_ip":           r.src_ip,
+                "decision":         r.decision,
+                "risk_score":       round(r.risk_score or 0, 3),
+                "is_phishing":      r.is_phishing,
+                "is_spam":          r.is_spam,
+                "has_malicious_url": r.has_malicious_url,
+                "has_bad_attachment": r.has_bad_attachment,
+                "brand_spoof":      r.brand_spoof,
+                "matched_keywords": r.matched_keywords or [],
+                "latency_ms":       r.latency_ms,
+            }
+            for r in rows
+        ]
+    finally:
+        db.close()

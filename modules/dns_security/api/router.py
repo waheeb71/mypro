@@ -17,6 +17,7 @@ from modules.dns_security.models import (
     FilterType,
     ActionEnum,
 )
+from modules.dns_security.engine.dns_engine import DNSEngine
 
 router = APIRouter(prefix="/api/v1/dns_security", tags=["dns_security"])
 
@@ -136,6 +137,7 @@ async def update_config(
 
     db.commit()
     db.refresh(config)
+    DNSEngine().reload()
     return config
 
 
@@ -214,6 +216,7 @@ async def create_rule(
     db.add(db_rule)
     db.commit()
     db.refresh(db_rule)
+    DNSEngine().reload()
     return db_rule
 
 
@@ -234,6 +237,7 @@ async def update_rule(
 
     db.commit()
     db.refresh(db_rule)
+    DNSEngine().reload()
     return db_rule
 
 
@@ -250,4 +254,5 @@ async def delete_rule(
 
     db.delete(db_rule)
     db.commit()
+    DNSEngine().reload()
     return None

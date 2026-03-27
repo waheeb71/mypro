@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from system.database.database import get_db
 from api.rest.auth import require_admin, make_permission_checker
 from modules.dlp.models import DLPRule as DBDLPRule, DLPConfig as DBDLPConfig
+from modules.dlp.engine.dlp_engine import DLPEngine
 
 router = APIRouter(prefix="/api/v1/dlp", tags=["dlp"])
 
@@ -72,6 +73,7 @@ async def update_config(
         
     db.commit()
     db.refresh(config)
+    DLPEngine().reload()
     return config
 
 # --- API Endpoints: DLP Rules ---
@@ -95,6 +97,7 @@ async def create_rule(
     db.add(db_rule)
     db.commit()
     db.refresh(db_rule)
+    DLPEngine().reload()
     return db_rule
 
 @router.delete("/rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -106,4 +109,5 @@ async def delete_rule(rule_id: int, db: Session = Depends(get_db), token: dict =
         
     db.delete(db_rule)
     db.commit()
+    DLPEngine().reload()
     return None

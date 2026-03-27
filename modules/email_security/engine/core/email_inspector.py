@@ -420,7 +420,7 @@ class EmailInspectorPlugin(InspectorPlugin):
         if action == InspectionAction.BLOCK:
             self._blocked_count += 1
 
-        return InspectionResult(
+        result = InspectionResult(
             action=action,
             findings=findings,
             processing_time_ms=latency_ms,
@@ -438,8 +438,71 @@ class EmailInspectorPlugin(InspectorPlugin):
             },
         )
 
+        # Persist inspection result to DB — off the hot path
+        import threading
+        threading.Thread(
+            target=self._log_to_db,
+            args=(context, parsed, breakdown, action, phishing_score, spam_score,
+                  url_score, attachment_score, sender_score, latency_ms, findings),
+            daemon=True,
+        ).start()
+
+        return result
+
+    def _log_to_db(self, context, parsed, breakdown, action, phishing_score,
+                   spam_score, url_score, attachment_score, sender_score,
+                   latency_ms, findings):
+        """Persist an EmailLog entry. Called from a background thread."""
+        try:
+            from system.database.database import SessionLocal
+            from modules.email_security.models import EmailLog
+
+            matched_kw = []
+            flagged_urls_list = []
+            brand_spoof = ""
+            categories = []
+            for f in findings:
+                categories.append(f.category)
+                md = getattr(f, "metadata", {}) or {}
+                matched_kw.extend(md.get("matched_keywords", []))
+                for u in md.get("flagged_urls", []):
+                    flagged_urls_list.append(u.get("url", str(u)))
+                if md.get("phishing_score") and md.get("brand_spoof", ""):
+                    brand_spoof = md["brand_spoof"]
+
+            decision_str = breakdown.decision.value   # allow | quarantine | block
+
+            with SessionLocal() as db:
+                log = EmailLog(
+                    src_ip           = context.src_ip,
+                    dst_port         = context.dst_port,
+                    sender           = parsed.raw_from[:255] if parsed.raw_from else None,
+                    subject          = parsed.subject[:512] if parsed.subject else None,
+                    risk_score       = round(breakdown.final_score, 4),
+                    phishing_score   = round(phishing_score, 4),
+                    spam_score       = round(spam_score, 4),
+                    url_score        = round(url_score, 4),
+                    attachment_score = round(attachment_score, 4),
+                    sender_score     = round(sender_score, 4),
+                    decision         = decision_str,
+                    is_phishing      = phishing_score >= 0.40,
+                    is_spam          = spam_score >= 0.70,
+                    has_malicious_url = url_score >= 0.40,
+                    has_bad_attachment = attachment_score >= 0.40,
+                    brand_spoof      = brand_spoof[:64] if brand_spoof else None,
+                    matched_keywords = list(set(matched_kw))[:20],
+                    flagged_urls     = flagged_urls_list[:10],
+                    finding_categories = categories,
+                    latency_ms       = round(latency_ms, 2),
+                )
+                db.add(log)
+                db.commit()
+        except Exception as exc:
+            logger.debug("EmailLog write failed: %s", exc)
+
     @staticmethod
     def _extract_domain(raw_from: str) -> str:
         import re
         m = re.search(r'@([\w.\-]+)', raw_from)
         return m.group(1).lower() if m else ""
+

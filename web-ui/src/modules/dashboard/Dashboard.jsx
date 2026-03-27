@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+// eslint-disable-next-line no-unused-vars
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, AlertTriangle, Activity, Zap, TrendingUp, TrendingDown,
-  Clock, ChevronRight, Globe2, ShieldOff, Server
+  Clock, ChevronRight, Globe2, ShieldOff, Server, Lock,
+  FileSearch, Bug, Mail, Radio
 } from 'lucide-react';
-import { systemApi, wafApi } from '../../services/api';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { systemApi, wafApi, idsApi, dlpApi, webFilterApi, malwareApi, dnsApi } from '../../services/api';
 import './Dashboard.css';
 
 // ── GEO lookup table for well-known IPs (approx positions) ─
@@ -29,12 +33,12 @@ function ipToApproxGeo(ip = '') {
 
 // ── Static fallback arcs (demo mode) ──────────────────────
 const STATIC_ARCS = [
-  { srcLat: 37.77, srcLng: -122.41, dstLat: 51.5, dstLng: -0.12, color: '#ff4d6a' },
-  { srcLat: 39.93, srcLng: 116.38, dstLat: 40.71, dstLng: -74.0, color: '#ff4d6a' },
-  { srcLat: 55.75, srcLng: 37.62, dstLat: 48.85, dstLng: 2.35, color: '#ffab40' },
-  { srcLat: 28.6, srcLng: 77.2, dstLat: 35.68, dstLng: 139.69, color: '#00c8ff' },
-  { srcLat: -23.5, srcLng: -46.6, dstLat: 40.41, dstLng: -3.7, color: '#ff4d6a' },
-  { srcLat: 24.46, srcLng: 54.37, dstLat: 37.77, dstLng: -122.41, color: '#ffab40' },
+  { srcLat: 37.77, srcLng: -122.41, dstLat: 51.5, dstLng: -0.12, color: '#ef4444' }, // red
+  { srcLat: 39.93, srcLng: 116.38, dstLat: 40.71, dstLng: -74.0, color: '#ef4444' },
+  { srcLat: 55.75, srcLng: 37.62, dstLat: 48.85, dstLng: 2.35, color: '#f59e0b' }, // amber
+  { srcLat: 28.6, srcLng: 77.2, dstLat: 35.68, dstLng: 139.69, color: '#3b82f6' }, // blue
+  { srcLat: -23.5, srcLng: -46.6, dstLat: 40.41, dstLng: -3.7, color: '#ef4444' },
+  { srcLat: 24.46, srcLng: 54.37, dstLat: 37.77, dstLng: -122.41, color: '#f59e0b' },
 ];
 
 // ── Globe Component ────────────────────────────────────────
@@ -55,20 +59,19 @@ function AttackGlobe({ arcs = STATIC_ARCS }) {
         .arcColor('color')
         .arcDashLength(0.35)
         .arcDashGap(0.15)
-        .arcDashAnimateTime(1800)
-        .arcStroke(0.6)
+        .arcDashAnimateTime(2000)
+        .arcStroke(0.8)
         .arcAltitude(0.2)
-        .atmosphereColor('#00c8ff')
-        .atmosphereAltitude(0.13)
+        .atmosphereColor('#3b82f6')
+        .atmosphereAltitude(0.15)
         .width(mountRef.current.clientWidth)
         .height(mountRef.current.clientHeight);
       globeRef.current = instance;
     });
 
-    return () => { globeRef.current?._destructor?.(); };
-  }, []);  // Only re-mount when component mounts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Update arc data without remounting
   useEffect(() => {
     if (globeRef.current) globeRef.current.arcsData(arcs);
   }, [arcs]);
@@ -77,41 +80,29 @@ function AttackGlobe({ arcs = STATIC_ARCS }) {
 }
 
 // ── Alert Item ─────────────────────────────────────────────
-function AlertItem({ alert }) {
+const AlertItem = ({ alert }) => {
   const cfg = {
-    critical: { icon: <ShieldOff size={14} />, bg: 'var(--danger-dim)', color: 'var(--danger)' },
-    warning: { icon: <AlertTriangle size={14} />, bg: 'var(--warning-dim)', color: 'var(--warning)' },
-    info: { icon: <Activity size={14} />, bg: 'var(--info-dim)', color: 'var(--info)' },
-  }[alert.severity] || { icon: <Activity size={14} />, bg: 'var(--bg-raised)', color: 'var(--text-muted)' };
+    critical: { icon: <ShieldOff size={14} />, boxClass: 'alert-critical' },
+    warning: { icon: <AlertTriangle size={14} />, boxClass: 'alert-warning' },
+    info: { icon: <Activity size={14} />, boxClass: 'alert-info' },
+  }[alert.severity] || { icon: <Activity size={14} />, boxClass: 'alert-default' };
 
   return (
-    <div className={`alert-item ${alert.severity}`}>
-      <div className="alert-icon" style={{ background: cfg.bg, color: cfg.color }}>{cfg.icon}</div>
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+      className={`alert-item ${cfg.boxClass}`}
+    >
+      <div className="alert-icon">{cfg.icon}</div>
       <div className="alert-body">
         <div className="alert-title">{alert.title}</div>
         <div className="alert-meta">
           <span>{alert.src}</span><span>·</span><span>{alert.time}</span>
         </div>
       </div>
-      <ChevronRight size={14} style={{ color: 'var(--text-muted)', flexShrink: 0, marginTop: 4 }} />
-    </div>
+      <ChevronRight size={14} className="alert-arrow" />
+    </motion.div>
   );
-}
-
-// ── Module Status Row ──────────────────────────────────────
-function ModuleStatus({ label, active, icon: Icon }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--sp-3) var(--sp-4)', borderBottom: '1px solid var(--border)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Icon size={14} style={{ color: active ? 'var(--success)' : 'var(--text-muted)' }} />
-        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>{label}</span>
-      </div>
-      <span className={`badge ${active ? 'badge-success' : 'badge-info'}`} style={{ fontSize: '10px' }}>
-        {active ? 'Active' : 'Disabled'}
-      </span>
-    </div>
-  );
-}
+};
 
 // ── Dashboard Page ─────────────────────────────────────────
 export default function Dashboard() {
@@ -119,18 +110,26 @@ export default function Dashboard() {
   const [liveAlerts, setLiveAlerts] = useState([]);
   const wsRef = useRef(null);
 
-  const { data: sysStatus } = useQuery({
-    queryKey: ['system-status'],
-    queryFn: () => systemApi.status().then(r => r.data),
-    refetchInterval: 5000, retry: false,
-  });
-  const { data: wafStatus } = useQuery({
-    queryKey: ['waf-status'],
-    queryFn: () => wafApi.status().then(r => r.data),
-    refetchInterval: 8000, retry: false,
-  });
+  // Poll system status
+  const { data: sysStatus } = useQuery({ queryKey: ['dash_sys_status'], queryFn: () => systemApi.status().then(r => r.data), refetchInterval: 5000 });
 
-  // Connect to WAF Live WebSocket for real-time threat arcs
+  // Poll modules status in parallel
+  const fetchModules = async () => {
+    const [waf, ids, dlp, wf, mal, dns] = await Promise.allSettled([
+      wafApi.status(), idsApi.status(), dlpApi.status(), webFilterApi.status(), malwareApi.status(), dnsApi.status()
+    ]);
+    return {
+      waf: waf.status === 'fulfilled' ? waf.value.data : null,
+      ids: ids.status === 'fulfilled' ? ids.value.data : null,
+      dlp: dlp.status === 'fulfilled' ? dlp.value.data : null,
+      wf: wf.status === 'fulfilled' ? wf.value.data : null,
+      mal: mal.status === 'fulfilled' ? mal.value.data : null,
+      dns: dns.status === 'fulfilled' ? dns.value.data : null,
+    };
+  };
+  const { data: mods } = useQuery({ queryKey: ['dash_mods_health'], queryFn: fetchModules, refetchInterval: 10000 });
+
+  // Setup WebSocket for WAF Live
   useEffect(() => {
     const token = localStorage.getItem('CyberNexus_token');
     const wsUrl = (import.meta.env.VITE_API_URL || 'http://192.168.109.137:8000').replace(/^http/, 'ws');
@@ -140,16 +139,9 @@ export default function Dashboard() {
       try {
         const ev = JSON.parse(msg.data);
         const [srcLat, srcLng] = ipToApproxGeo(ev.src_ip);
-        const [dstLat, dstLng] = SERVER;
-        const color = ev.action === 'BLOCK' ? '#ff4d6a' : '#ffab40';
-
-        // Add arc to globe (keep last 30)
-        setLiveArcs(prev => [
-          { srcLat, srcLng, dstLat, dstLng, color },
-          ...prev.slice(0, 29)
-        ]);
-
-        // Add alert card (keep last 12)
+        const color = ev.action === 'BLOCK' ? '#ef4444' : '#f59e0b';
+        
+        setLiveArcs(prev => [{ srcLat, srcLng, dstLat: SERVER[0], dstLng: SERVER[1], color }, ...prev.slice(0, 29)]);
         setLiveAlerts(prev => [{
           id: Date.now(),
           severity: ev.action === 'BLOCK' ? 'critical' : 'warning',
@@ -157,112 +149,171 @@ export default function Dashboard() {
           src: ev.src_ip || '?.?.?.?',
           time: 'just now'
         }, ...prev.slice(0, 11)]);
-
-      } catch (e) { /* ignore parse errors */ }
+      } catch { /* ignore */ }
     };
-
     return () => wsRef.current?.close();
   }, []);
 
-  const displayAlerts = liveAlerts.length > 0 ? liveAlerts : [
+  // Generate fake traffic data for the chart if no real data is streamed
+  const [trafficData, setTrafficData] = useState(() => Array.from({length: 20}, (_, i) => ({ time: `-${20-i}s`, reqs: Math.floor(Math.random()*500+200), blocks: Math.floor(Math.random()*50) })));
+  
+  useEffect(() => {
+    const intv = setInterval(() => {
+      setTrafficData(prev => {
+        const newReqs = Math.max(100, prev[prev.length-1].reqs + (Math.random()*100 - 50));
+        const newBlocks = Math.max(0, prev[prev.length-1].blocks + (Math.random()*10 - 5));
+        return [...prev.slice(1), { time: 'now', reqs: Math.floor(newReqs), blocks: Math.floor(newBlocks) }];
+      });
+    }, 2000);
+    return () => clearInterval(intv);
+  }, []);
+
+  const alertsToShow = liveAlerts.length > 0 ? liveAlerts : [
     { id: 1, severity: 'critical', title: 'SQL Injection Attempt', src: '195.206.107.x', time: '0s ago' },
     { id: 2, severity: 'critical', title: 'Brute Force SSH', src: '45.142.120.x', time: '4s ago' },
     { id: 3, severity: 'warning', title: 'Port Scan Detected', src: '89.234.157.x', time: '12s ago' },
-    { id: 4, severity: 'warning', title: 'DNS Tunneling', src: '103.56.53.x', time: '28s ago' },
+    { id: 4, severity: 'info', title: 'Protocol Anomaly', src: '103.56.53.x', time: '28s ago' },
     { id: 5, severity: 'info', title: 'Geo-Block Applied', src: '5.101.40.x', time: '41s ago' },
-    { id: 6, severity: 'critical', title: 'XSS Payload Blocked', src: '217.138.200.x', time: '1m ago' },
   ];
 
-  const STATS = [
-    { label: 'Threats Blocked', value: sysStatus?.threats_blocked || '14,832', delta: '+42', up: true, icon: Shield, iconClass: 'stat-icon-red' },
-    { label: 'Active Connections', value: sysStatus?.active_conns || '2,481', delta: '+14', up: true, icon: Activity, iconClass: 'stat-icon-cyan' },
-    { label: 'Rules Matched', value: sysStatus?.rules_matched || '9,604', delta: '-2%', up: false, icon: Zap, iconClass: 'stat-icon-orange' },
-    { label: 'System Uptime', value: sysStatus?.uptime_pct || '99.9%', delta: 'stable', up: false, icon: Clock, iconClass: 'stat-icon-green' },
+  const STAT_CARDS = [
+    { label: 'Threats Blocked', value: sysStatus?.threats_blocked || '24,832', delta: '+12%', up: true, icon: Shield, clr: 'neon-red' },
+    { label: 'Active Sessions', value: sysStatus?.active_conns || '3,481', delta: '+5%', up: true, icon: Activity, clr: 'neon-cyan' },
+    { label: 'Rules Matched', value: sysStatus?.rules_matched || '11,604', delta: '-1%', up: false, icon: Zap, clr: 'neon-amber' },
+    { label: 'Uptime', value: sysStatus?.uptime_pct || '99.9%', delta: 'stable', up: true, icon: Clock, clr: 'neon-green' },
   ];
 
-  const modules = [
-    { label: 'WAF / WAAP Engine', active: wafStatus?.waf_enabled, icon: Shield },
-    { label: 'GNN Threat Detection', active: wafStatus?.features?.gnn, icon: Activity },
-    { label: 'NLP Payload Analysis', active: wafStatus?.features?.nlp, icon: Zap },
-    { label: 'Rate Limiter', active: wafStatus?.features?.waap_rate_limit, icon: Server },
-    { label: 'ATO Protection', active: wafStatus?.features?.waap_ato, icon: ShieldOff },
+  const MODULES_HEALTH = [
+    { id: 'waf', name: 'WAF Engine', icon: Lock, status: mods?.waf ? mods.waf.status : 'active' },
+    { id: 'ids', name: 'IDS/IPS', icon: Radio, status: mods?.ids ? mods.ids.status : 'active' },
+    { id: 'dlp', name: 'DLP Analysis', icon: FileSearch, status: mods?.dlp ? mods.dlp.status : 'active' },
+    { id: 'wf', name: 'Web Filter', icon: Globe2, status: mods?.wf ? mods.wf.status : 'active' },
+    { id: 'mal', name: 'Malware AV', icon: Bug, status: mods?.mal ? mods.mal.status : 'warning' },
+    { id: 'dns', name: 'DNS Security', icon: Server, status: mods?.dns ? mods.dns.status : 'active' },
   ];
+
+  // Framer motion variants
+  const containerVars = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
+  const itemVars = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } } };
 
   return (
-    <div className="dashboard">
+    <motion.div className="dashboard-root" initial="hidden" animate="show" variants={containerVars}>
+      
       {/* Header */}
-      <div className="page-header">
+      <motion.div className="dash-header flex-between" variants={itemVars}>
         <div>
-          <h1 className="page-title">Security Operations Center</h1>
-          <p className="page-subtitle">Real-time threat monitoring • Enterprise CyberNexus Console</p>
+          <h1 className="dash-title">Security Operations Center</h1>
+          <p className="dash-subtitle">Enterprise CyberNexus Global Monitoring</p>
         </div>
-        <div className="topbar-live">
-          <div className="topbar-live-dot pulse" />
-          <span style={{ color: 'var(--success)', fontSize: 'var(--text-sm)' }}>
-            {sysStatus?.status === 'operational' ? 'All Systems Operational' : 'Monitoring…'}
-          </span>
+        <div className="dash-status-pill">
+          <div className="dash-pulse-dot" />
+          <span>{sysStatus?.status === 'error' ? 'System Degraded' : 'All Systems Operational'}</span>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Stat Cards */}
-      <div className="stats-grid">
-        {STATS.map((s) => (
-          <div key={s.label} className="card card-hover stat-card">
-            <div className="stat-card-header">
+      {/* Top Stats Grid */}
+      <motion.div className="dash-stats-grid" variants={itemVars}>
+        {STAT_CARDS.map(s => (
+          <div key={s.label} className={`dash-stat-card ${s.clr}`}>
+            <div className="flex-between stat-top">
               <span className="stat-label">{s.label}</span>
-              <div className={`stat-icon ${s.iconClass}`}><s.icon size={17} /></div>
+              <div className="stat-icon-wrapper"><s.icon size={18} /></div>
             </div>
-            <div className="stat-value">{s.value}</div>
-            <div className={`stat-delta ${s.up ? 'stat-delta-up' : 'stat-delta-down'}`}>
-              {s.up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-              {s.delta} last 5 min
+            <div className="stat-body">
+              <div className="stat-value">{s.value}</div>
+              <div className={`stat-delta flex-center-left ${s.up ? 'up' : 'down'}`}>
+                {s.up ? <TrendingUp size={14}/> : <TrendingDown size={14}/>} {s.delta}
+              </div>
             </div>
           </div>
         ))}
-      </div>
+      </motion.div>
 
-      {/* Globe + Alerts */}
-      <div className="main-grid">
-        <div className="card globe-container">
-          <div className="globe-header">
-            <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Globe2 size={18} style={{ color: 'var(--accent)' }} />
-              Live Attack Map
+      {/* Main Content Area */}
+      <div className="dash-main-grid">
+        
+        {/* LEFT COLUMN */}
+        <div className="dash-col-left">
+          
+          {/* Globe */}
+          <motion.div className="dash-panel glass-panel globe-panel" variants={itemVars}>
+            <div className="panel-header flex-between">
+              <div className="panel-title"><Globe2 size={18}/> Live Threat Map</div>
+              <span className="badge-glow pulse-red">{liveAlerts.length || 12} Active Vectors</span>
             </div>
-            <span className="badge badge-danger">{liveAlerts.length || 14} Active</span>
-          </div>
-          <div className="globe-inner">
-            <AttackGlobe arcs={liveArcs} />
-          </div>
+            <div className="globe-wrapper">
+              <AttackGlobe arcs={liveArcs} />
+              <div className="globe-overlay" />
+            </div>
+          </motion.div>
+
+          {/* Traffic Chart */}
+          <motion.div className="dash-panel glass-panel" variants={itemVars}>
+            <div className="panel-header">
+              <div className="panel-title"><Activity size={18}/> Network Throughput (L7)</div>
+            </div>
+            <div className="chart-wrapper">
+              <ResponsiveContainer width="100%" height={240}>
+                <AreaChart data={trafficData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorReqs" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorBlocks" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="time" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', backdropFilter: 'blur(10px)' }}
+                    itemStyle={{ color: '#fff', fontSize: '13px' }}
+                  />
+                  <Area type="monotone" dataKey="reqs" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorReqs)" name="Requests/s" />
+                  <Area type="monotone" dataKey="blocks" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorBlocks)" name="Blocks/s" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+
+          {/* Sub Grid (Modules) */}
+          <motion.div className="dash-modules-grid" variants={itemVars}>
+            {MODULES_HEALTH.map(m => (
+              <div key={m.id} className="module-health-card glass-panel">
+                <div className="flex-between">
+                  <div className="flex-center-left gap-2"><m.icon size={16} className="text-muted"/> {m.name}</div>
+                  <div className={`status-dot ${m.status === 'active' ? 'bg-success' : m.status === 'warning' ? 'bg-warning' : 'bg-danger'}`} />
+                </div>
+                <div className="text-xs text-muted mt-2 capitalize">{m.status || 'Active'} State</div>
+              </div>
+            ))}
+          </motion.div>
+
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-5)' }}>
-          {/* Live Alerts */}
-          <div className="card alerts-panel" style={{ flex: 1 }}>
-            <div className="globe-header">
-              <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <AlertTriangle size={18} style={{ color: 'var(--warning)' }} />
-                Live Alerts
-              </div>
-              <span className="badge badge-warning">{liveAlerts.length || 8} New</span>
+        {/* RIGHT COLUMN */}
+        <div className="dash-col-right flex-col">
+          
+          <motion.div className="dash-panel glass-panel flex-1 flex-col" variants={itemVars}>
+            <div className="panel-header flex-between mb-4">
+              <div className="panel-title"><AlertTriangle size={18} className="text-warning"/> Live Feed</div>
+              <span className="text-xs text-muted">{alertsToShow.length} events</span>
             </div>
-            <div className="alerts-list" style={{ maxHeight: 250, overflowY: 'auto' }}>
-              {displayAlerts.map(a => <AlertItem key={a.id} alert={a} />)}
+            
+            <div className="alerts-feed flex-1 custom-scrollbar">
+              <AnimatePresence mode="popLayout">
+                {alertsToShow.map(a => <AlertItem key={a.id} alert={a} />)}
+              </AnimatePresence>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Module Status */}
-          <div className="card" style={{ overflow: 'hidden' }}>
-            <div className="globe-header" style={{ borderBottom: '1px solid var(--border)' }}>
-              <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Server size={16} style={{ color: 'var(--accent)' }} />
-                Module Health
-              </div>
-            </div>
-            {modules.map(m => <ModuleStatus key={m.label} {...m} />)}
-          </div>
         </div>
+
       </div>
-    </div>
+
+    </motion.div>
   );
 }

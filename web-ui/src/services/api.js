@@ -145,17 +145,16 @@ export const httpApi = {
 /* ── Web Filter ────────────────────────────────────── */
 export const webFilterApi = {
   status: () => api.get('/api/v1/web_filter/status'),
+  config: () => api.get('/api/v1/web_filter/config'),
+  updateConfig: (d) => api.put('/api/v1/web_filter/config', d),
+  categories: () => api.get('/api/v1/web_filter/categories'),
+  addCategory: (d) => api.post('/api/v1/web_filter/categories', d),
+  deleteCategory: (id) => api.delete(`/api/v1/web_filter/categories/${id}`),
+  domains: () => api.get('/api/v1/web_filter/domains'),
+  addDomain: (d) => api.post('/api/v1/web_filter/domains', d),
+  deleteDomain: (id) => api.delete(`/api/v1/web_filter/domains/${id}`),
 };
 
-/* ── Email Security ────────────────────────────────── */
-export const emailApi = {
-  status: () => api.get('/api/v1/email_security/status'),
-  config: () => api.get('/api/v1/email_security/config'),
-  updateConfig: (d) => api.put('/api/v1/email_security/config', d),
-  whitelist: () => api.get('/api/v1/email_security/whitelist'),
-  addWhitelist: (d) => api.post('/api/v1/email_security/whitelist', d),
-  removeWhitelist: (type, value) => api.delete(`/api/v1/email_security/whitelist/${type}/${encodeURIComponent(value)}`),
-};
 
 /* ── Malware AV ────────────────────────────────────── */
 export const malwareApi = {
@@ -228,4 +227,16 @@ export const proxyApi = {
   status: () => api.get('/api/v1/proxy/status'),
   config: () => api.get('/api/v1/proxy/config'),
   updateConfig: (d) => api.put('/api/v1/proxy/config', d),
+};
+
+/* ── Email Security ────────────────────────────────── */
+export const emailApi = {
+  status: () => api.get('/api/v1/email_security/status'),
+  config: () => api.get('/api/v1/email_security/config'),
+  updateConfig: (d) => api.put('/api/v1/email_security/config', d),
+  stats: () => api.get('/api/v1/email_security/stats'),
+  logs: (params) => api.get('/api/v1/email_security/logs', { params }),
+  whitelist: () => api.get('/api/v1/email_security/whitelist'),
+  addToWhitelist: (d) => api.post('/api/v1/email_security/whitelist', d),
+  removeFromWhitelist: (type, val) => api.delete(`/api/v1/email_security/whitelist/${type}/${val}`),
 };

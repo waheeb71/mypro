@@ -106,7 +106,12 @@ class PhishingDetector:
 
         self._keywords = list(_PHISHING_KEYWORDS) + (custom_keywords or [])
 
-        if nlp_enabled and nlp_model_path:
+        if nlp_enabled:
+            if not nlp_model_path:
+                import os
+                # Auto-resolve fallback path
+                base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+                nlp_model_path = os.path.join(base_dir, "ml_training", "email_phishing_model_checkpoint.pt")
             self._load_nlp(nlp_model_path)
 
     def _load_nlp(self, path: str) -> None:
