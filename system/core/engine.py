@@ -39,7 +39,7 @@ from system.telemetry.health import HealthChecker
 
 # Integrations
 from modules.vpn.engine.wireguard import WireGuardManager, PeerConfig
-from system.ha import HAManager, NodeState
+from system.ha import LeaderElection
 from system.ha.state_sync import StateSynchronizer
 from system.database.database import DatabaseManager
 from system.networking.transparent_proxy import TransparentProxyManager
@@ -89,7 +89,7 @@ class CyberNexusApplication:
         # Integrations
         self.vpn_manager: Optional[WireGuardManager] = None
         self.vpn_enabled: bool = False
-        self.ha_manager: Optional[HAManager] = None
+        self.ha_manager: Optional[LeaderElection] = None
         self.state_sync: Optional[StateSynchronizer] = None
         self.is_ha_master: bool = True
         
@@ -255,20 +255,26 @@ class CyberNexusApplication:
             if ha_config.get('enabled', False):
                 logger.info("Initializing HA...")
                 node_id = ha_config.get('node_id', 'node_1')
-                priority = ha_config.get('priority', 100)
                 peer_ip = ha_config.get('peer_ip', '127.0.0.1')
-                self.ha_manager = HAManager(node_id, priority, peer_ip=peer_ip, logger=logger)
+                self.ha_manager = LeaderElection.instance()
                 self.state_sync = StateSynchronizer(peer_ip=peer_ip, logger=logger)
                 
-                def on_ha_state_change(new_state: NodeState):
-                    self.is_ha_master = (new_state == NodeState.MASTER)
-                    if self.state_sync:
-                        self.state_sync.on_state_change(self.is_ha_master)
-                    logger.info(f"HA State changed! Currently Master: {self.is_ha_master}")
+                @self.ha_manager.on_become_leader
+                async def _on_leader():
+                    self.is_ha_master = True
+                    if getattr(self, 'state_sync', None):
+                        await self.state_sync.start(True)
+                    logger.info("HA State changed! Currently Master: True")
                     
-                self.ha_manager.set_state_change_callback(on_ha_state_change)
+                @self.ha_manager.on_lose_leadership
+                async def _on_follower():
+                    self.is_ha_master = False
+                    if getattr(self, 'state_sync', None):
+                        await self.state_sync.start(False)
+                    logger.info("HA State changed! Currently Master: False")
+                    
                 await self.ha_manager.start()
-                self.is_ha_master = (self.ha_manager.state == NodeState.MASTER)
+                self.is_ha_master = self.ha_manager.is_leader
                 await self.state_sync.start(self.is_ha_master)
             else:
                 self.is_ha_master = True
