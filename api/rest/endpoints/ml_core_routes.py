@@ -25,7 +25,7 @@ def _get_app(request: Request):
     return request.app.state.CyberNexus
 
 @router.get("/config")
-async def get_ml_config(request: Request, token: dict = Depends(check_permission("firewall"))):
+async def get_ml_config(request: Request, token: dict = Depends(require_admin)):
     """Retrieve current ML Core and Correlation Engine settings."""
     app = _get_app(request)
     ml_config = app.config.get("ml", {})
@@ -40,7 +40,7 @@ async def get_ml_config(request: Request, token: dict = Depends(check_permission
     }
 
 @router.put("/config")
-async def update_ml_config(request: Request, payload: MLConfigUpdate, token: dict = Depends(check_permission("firewall"))):
+async def update_ml_config(request: Request, payload: MLConfigUpdate, token: dict = Depends(require_admin)):
     """Update ML Core settings dynamically."""
     app = _get_app(request)
     
