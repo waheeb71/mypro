@@ -6,7 +6,7 @@ PUT  /api/v1/ml-core/config -> Update ML thresholds
 import logging
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
-from api.rest.auth import check_permission
+from api.rest.auth import require_admin
 
 router = APIRouter(prefix="/api/v1/ml-core", tags=["ML Core & Predictive AI"])
 logger = logging.getLogger(__name__)
