@@ -17,7 +17,7 @@ modules:
   ids_ips:
     enabled: true
   malware_av:
-    enabled: true
+    enabled: false
   dns_security:
     enabled: true
   http_inspection:
