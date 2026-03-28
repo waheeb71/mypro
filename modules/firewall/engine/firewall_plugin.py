@@ -46,6 +46,7 @@ class FirewallPlugin(InspectorPlugin):
             logger=logger or logging.getLogger(__name__),
         )
         self.db_manager = db_manager
+        self.config = config or {}
         self._state_tracker = None
         self._evaluator = None
 
@@ -98,14 +99,20 @@ class FirewallPlugin(InspectorPlugin):
         action_str = decision.get("action", "ALLOW").upper()
 
         if action_str in ("DROP", "BLOCK", "REJECT"):
-            result.action = InspectionAction.BLOCK
+            is_monitor = str(self.config.get("mode", "enforce")).lower() == "monitor"
+            
+            if is_monitor:
+                result.action = InspectionAction.LOG_ONLY
+            else:
+                result.action = InspectionAction.BLOCK
+                
             result.findings.append(InspectionFinding(
                 plugin_name=self.name,
                 severity="HIGH",
                 category="Firewall",
                 description=decision.get("reason", "Blocked by firewall policy"),
                 confidence=decision.get("confidence", 1.0),
-                recommends_block=True,
+                recommends_block=not is_monitor,
                 metadata={
                     "rule":     decision.get("rule_name", ""),
                     "src_ip":   src_ip,
