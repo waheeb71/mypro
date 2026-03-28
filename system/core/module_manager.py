@@ -50,6 +50,10 @@ class ModuleManager:
             "module": "modules.firewall.engine.firewall_plugin",
             "class": "FirewallPlugin"
         },
+        "log_manager": {
+            "module": "modules.log_manager.engine.plugin",
+            "class": "LogManagerPlugin"
+        },
     }
     
     def __init__(self, config: Dict[str, Any], pipeline: InspectionPipeline):

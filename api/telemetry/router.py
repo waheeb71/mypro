@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, Query, Request
 from typing import List, Dict, Any
 
 from api.rest.auth import require_admin, verify_token
-# Import the actual global buffer instance directly from core.log_manager
-from system.core.log_manager import global_memory_handler
+# Import the actual global buffer instance directly from log manager
+from modules.log_manager.engine.log_controller import global_memory_handler
 
 router = APIRouter(prefix="/api/v1/system/logs", tags=["system", "logs"])
 

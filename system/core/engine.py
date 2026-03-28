@@ -117,7 +117,7 @@ class CyberNexusApplication:
             
             logger.info("✅ Configuration loaded successfully")
             
-            required_sections = ['proxy', 'tls', 'logging']
+            required_sections = ['proxy', 'tls']
             for section in required_sections:
                 if section not in self.config:
                     logger.error(f"Missing required configuration section: {section}")
@@ -133,9 +133,9 @@ class CyberNexusApplication:
             sys.exit(1)
             
     def setup_file_logging(self):
-        """Setup rolling file logging based on configuration"""
-        log_config = self.config.get('logging', {})
-        log_file = Path(log_config.get('file', 'logs/CyberNexus.log'))
+        """Setup rolling file logging based on centralized Log Manager configuration"""
+        log_config = self.config.get('modules', {}).get('log_manager', {})
+        log_file = Path(log_config.get('main_log_file', 'logs/CyberNexus.log'))
         log_file.parent.mkdir(parents=True, exist_ok=True)
         
         # Check if already has file handlers to prevent duplication on reload
@@ -146,7 +146,7 @@ class CyberNexusApplication:
                 
         file_handler = logging.handlers.RotatingFileHandler(
             log_file,
-            maxBytes=log_config.get('max_bytes', 104857600),
+            maxBytes=log_config.get('max_file_size_bytes', 104857600),
             backupCount=log_config.get('backup_count', 10),
             encoding='utf-8'
         )

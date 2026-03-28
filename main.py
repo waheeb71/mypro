@@ -25,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Setup Web UI Logging Ring Buffer
-from system.core.log_manager import setup_terminal_logging
+from modules.log_manager.engine.log_controller import setup_terminal_logging
 setup_terminal_logging()
 
 # Import the core engine

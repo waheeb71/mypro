@@ -34,6 +34,19 @@ modules:
     enabled: true
   waf:
     enabled: true
+  log_manager:
+    enabled: true
+    primary_log_dir: "logs"
+    main_log_file: "logs/CyberNexus.log"
+    max_file_size_bytes: 104857600
+    backup_count: 10
+    default_level: "INFO"
+    flow_logging:
+      enabled: true
+      file: "logs/flows.log"
+    security_logging:
+      enabled: true
+      file: "logs/security.log"
 
   max_connections: 10000
   buffer_size: 65536
@@ -110,15 +123,6 @@ security:
     requests_per_second: 1000
     burst_size: 5000
   strict_cert_validation: true
-logging:
-  level: INFO
-  file: logs/CyberNexus.log
-  max_bytes: 104857600
-  backup_count: 10
-  flow_log_enabled: true
-  flow_log_file: logs/flows.log
-  security_log_enabled: true
-  security_log_file: logs/security.log
 monitoring:
   prometheus:
     enabled: true
@@ -179,7 +183,13 @@ event_sink:
     format: json
     rotation: daily
     max_size: 100
-    compress: false
+    compress: true
+    retention_days: 365
+  - type: database
+    db_type: sqlite
+    connection_string: CyberNexus_events.db
+    table_name: events
+    auto_create_table: true
 interfaces:
   VMware Network Adapter VMnet1: LAN
   vEthernet (Default Switch): LAN

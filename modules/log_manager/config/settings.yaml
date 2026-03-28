@@ -1,0 +1,15 @@
+log_manager:
+  enabled: true
+  primary_log_dir: "logs"
+  main_log_file: "logs/CyberNexus.log"
+  max_file_size_bytes: 104857600
+  backup_count: 10
+  default_level: "INFO"
+  
+  flow_logging:
+    enabled: true
+    file: "logs/flows.log"
+  
+  security_logging:
+    enabled: true
+    file: "logs/security.log"
