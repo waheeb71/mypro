@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 from collections import deque
 import asyncio
+import aiosqlite
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +67,42 @@ def setup_terminal_logging():
 class LogController:
     """Manages system `.log` files, filtering, flushing, and searching."""
     
-    def __init__(self, log_dir: str = "logs"):
+    def __init__(self, log_dir: str = "logs", event_db_path: str = "CyberNexus_events.db"):
         self.log_dir = os.path.abspath(log_dir)
         os.makedirs(self.log_dir, exist_ok=True)
         self.memory_handler = global_memory_handler
+        self.event_db_path = event_db_path
     
+    async def query_events(self, src_ip: Optional[str] = None, verdict: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """Queries the security events database (Visitor Tracking)."""
+        if not os.path.exists(self.event_db_path):
+            return []
+            
+        results = []
+        try:
+            async with aiosqlite.connect(self.event_db_path) as db:
+                db.row_factory = aiosqlite.Row
+                query = "SELECT * FROM events WHERE 1=1"
+                params = []
+                
+                if src_ip:
+                    query += " AND src_ip = ?"
+                    params.append(src_ip)
+                if verdict:
+                    query += " AND verdict = ?"
+                    params.append(verdict)
+                    
+                query += " ORDER BY timestamp DESC LIMIT ?"
+                params.append(limit)
+                
+                async with db.execute(query, params) as cursor:
+                    async for row in cursor:
+                        results.append(dict(row))
+        except Exception as e:
+            logger.error(f"Error querying event database: {e}")
+            
+        return results
+
     def list_log_files(self) -> List[str]:
         if not os.path.exists(self.log_dir):
             return []
@@ -168,5 +200,7 @@ class LogControllerManager:
         if cls._instance is None:
             settings = config if config else {}
             log_dir = settings.get("primary_log_dir", "logs")
-            cls._instance = LogController(log_dir=log_dir)
+            # Determine event_db_path from the event_sink config or module settings
+            event_db_path = settings.get("event_db_path", "CyberNexus_events.db")
+            cls._instance = LogController(log_dir=log_dir, event_db_path=event_db_path)
         return cls._instance

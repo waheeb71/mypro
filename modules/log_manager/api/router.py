@@ -63,3 +63,29 @@ async def list_log_files():
         "status": "success",
         "data": controller.list_log_files()
     }
+
+@router.get("/events/search")
+async def search_events(
+    src_ip: Optional[str] = Query(None, description="Source IP to filter by"),
+    verdict: Optional[str] = Query(None, description="Verdict filter (allow, drop, etc.)"),
+    limit: int = Query(100, description="Max results")
+):
+    """Search structured security events (Visitor Tracking / SIEM)."""
+    controller = LogControllerManager.get_instance()
+    results = await controller.query_events(src_ip=src_ip, verdict=verdict, limit=limit)
+    return {
+        "status": "success",
+        "count": len(results),
+        "data": results
+    }
+
+@router.get("/visitors")
+async def get_visitors(limit: int = 50):
+    """Simplified Visitor Tracking view."""
+    controller = LogControllerManager.get_instance()
+    # In this context, visitors are unique source IPs with their latest activity
+    results = await controller.query_events(limit=limit)
+    return {
+        "status": "success",
+        "data": results
+    }

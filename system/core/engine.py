@@ -48,6 +48,7 @@ from system.networking.transparent_proxy import TransparentProxyManager
 from system.inspection_core.framework.pipeline import InspectionPipeline
 from modules.predictive_ai.engine.ai_inspector import AIInspector
 from system.core.module_manager import ModuleManager
+from system.core.path_manager import resolve_path
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +136,7 @@ class CyberNexusApplication:
     def setup_file_logging(self):
         """Setup rolling file logging based on centralized Log Manager configuration"""
         log_config = self.config.get('modules', {}).get('log_manager', {})
-        log_file = Path(log_config.get('main_log_file', 'logs/CyberNexus.log'))
+        log_file = resolve_path(log_config.get('main_log_file', 'logs/CyberNexus.log'))
         log_file.parent.mkdir(parents=True, exist_ok=True)
         
         # Check if already has file handlers to prevent duplication on reload
@@ -179,7 +180,10 @@ class CyberNexusApplication:
             self.ssl_policy_engine = SSLPolicyEngine(self.config)
             self.traffic_router = TrafficRouter(self.config)
             
-            self.event_sink = create_unified_sink(self.config)
+            # Get event sink config from log_manager module
+            log_mgr_conf = self.config.get('modules', {}).get('log_manager', {})
+            sink_conf = log_mgr_conf.get('event_sink', {})
+            self.event_sink = create_unified_sink(sink_conf)
             await self.event_sink.start()
             
             self.flow_tracker = FlowTracker(self.config)
@@ -201,10 +205,19 @@ class CyberNexusApplication:
             ml_config = self.config.get('ml', {})
             if ml_config.get('enabled', True):
                 logger.info("Initializing ML components...")
-                self.anomaly_detector = AnomalyDetector(contamination=ml_config.get('anomaly_contamination', 0.1))
+                anomaly_conf = ml_config.get('anomaly_detection', {})
+                anomaly_model = resolve_path(anomaly_conf.get('model_path'))
+                self.anomaly_detector = AnomalyDetector(
+                    contamination=ml_config.get('anomaly_contamination', 0.1),
+                    model_path=str(anomaly_model) if anomaly_model else None
+                )
                 self.traffic_profiler = TrafficProfiler(time_window=ml_config.get('profiler_time_window', 300))
                 self.policy_engine = AdaptivePolicyEngine(learning_rate=ml_config.get('policy_learning_rate', 0.1))
-                self.deep_classifier = DeepTrafficClassifier(model_path=ml_config.get('deep_model_path'))
+                
+                deep_model = resolve_path(ml_config.get('deep_model_path'))
+                self.deep_classifier = DeepTrafficClassifier(
+                    model_path=str(deep_model) if deep_model else None
+                )
                 self.rl_optimizer = RLPolicyOptimizer()
                 
                 # 🤖 Link RL Optimizer to Adaptive Policy Engine if enabled in config

@@ -41,12 +41,29 @@ modules:
     max_file_size_bytes: 104857600
     backup_count: 10
     default_level: "INFO"
+    event_db_path: "CyberNexus_events.db"
     flow_logging:
       enabled: true
       file: "logs/flows.log"
     security_logging:
       enabled: true
       file: "logs/security.log"
+    event_sink:
+      buffer_size: 1000
+      flush_interval: 1.0
+      backends:
+      - type: file
+        output_dir: logs/events
+        format: json
+        rotation: daily
+        max_size: 100
+        compress: true
+        retention_days: 365
+      - type: database
+        db_type: sqlite
+        connection_string: CyberNexus_events.db
+        table_name: events
+        auto_create_table: true
 
   max_connections: 10000
   buffer_size: 65536
@@ -160,10 +177,10 @@ integration:
     socket_path: suricata.socket
 ml:
   enabled: true
-  deep_model_path: "m:/��� �������/enterprise_CyberNexus/models/deep_classifier.onnx"
+  deep_model_path: "ml/models/ids_ips/l7_dpi_classifier.pkl"
   anomaly_detection:
     enabled: true
-    model_path: "m:/��� �������/enterprise_CyberNexus/models/anomaly_detector.onnx"
+    model_path: "ml/models/ids_ips/l3_anomaly_detector.pkl"
     threshold: 0.85
   traffic_profiling:
     enabled: true
@@ -171,25 +188,6 @@ ml:
   rl_policy_sync:
     enabled: false  # يتم تفعيله يدوياً لربط الـ RL بمحرك السياسات
 
-event_sink:
-  buffer_size: 1000
-  flush_interval: 1.0
-  batch_size: 100
-  max_retries: 3
-  retry_delay: 1.0
-  backends:
-  - type: file
-    output_dir: logs/events
-    format: json
-    rotation: daily
-    max_size: 100
-    compress: true
-    retention_days: 365
-  - type: database
-    db_type: sqlite
-    connection_string: CyberNexus_events.db
-    table_name: events
-    auto_create_table: true
 interfaces:
   VMware Network Adapter VMnet1: LAN
   vEthernet (Default Switch): LAN

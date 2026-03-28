@@ -100,6 +100,10 @@ class DeepTrafficClassifier:
                 self.model = torch.jit.load(path)
                 self.model.eval()
                 self._using_fallback = False
+            elif path.endswith('.pkl') or path.endswith('.joblib'):
+                import joblib
+                self.model = joblib.load(path)
+                self._using_fallback = False
         except ImportError as e:
             logger.warning(f"Model runtime not available: {e}")
         except Exception as e:
@@ -137,6 +141,8 @@ class DeepTrafficClassifier:
                 input_name = self.model.get_inputs()[0].name
                 result = self.model.run(None, {input_name: input_array})
                 probs = result[0][0]
+            elif hasattr(self.model, 'predict_proba'): # Scikit-Learn / Joblib
+                probs = self.model.predict_proba(input_array)[0]
             else:  # PyTorch
                 import torch
                 with torch.no_grad():
