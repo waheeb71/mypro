@@ -71,6 +71,8 @@ class ModuleManager:
                     mod = importlib.import_module(plugin_info["module"])
                     plugin_class = getattr(mod, plugin_info["class"])
                     plugin_instance = plugin_class()
+                    # Inject module configuration from base.yaml
+                    plugin_instance.config = mod_conf
                     
                     self.pipeline.register_plugin(plugin_instance)
                     loaded_count += 1
