@@ -7,7 +7,7 @@ proxy:
 modules:
   firewall:
     enabled: true
-    mode: monitor
+    mode: strict
   ssl_inspection:
     enabled: true
   dlp:
