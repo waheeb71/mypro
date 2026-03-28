@@ -31,7 +31,7 @@ export default function ConfigManager() {
   const handleDiff = async (versionStr) => {
     try {
        setDiff(null);
-       const current = versions[0]?.version; // normally the first is active/latest
+       const current = versions[0]?.version_id; // normally the first is active/latest
        const res = await enterpriseApi.configDiff(current, versionStr);
        setDiff({ target: versionStr, changes: res.data.diff });
        setSelectedVersion(versionStr);
@@ -91,12 +91,12 @@ export default function ConfigManager() {
              ) : (
                 versions.map((ver, idx) => {
                    const isActive = idx === 0;
-                   const isSelected = selectedVersion === ver.version;
+                   const isSelected = selectedVersion === ver.version_id;
                    
                    return (
                      <div 
-                        key={ver.version} 
-                        onClick={() => !isActive && handleDiff(ver.version)}
+                        key={ver.version_id} 
+                        onClick={() => !isActive && handleDiff(ver.version_id)}
                         className={`p-4 rounded-lg border transition cursor-pointer ${
                            isActive 
                              ? 'bg-indigo-900/30 border-indigo-500 cursor-default' 
@@ -107,15 +107,15 @@ export default function ConfigManager() {
                      >
                         <div className="flex justify-between items-start mb-2">
                            <span className="font-mono text-sm font-bold text-slate-200">
-                             {ver.version.substring(0, 15)}...
+                             {ver.version_id.substring(0, 15)}
                            </span>
                            {isActive && <span className="bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">ACTIVE</span>}
                         </div>
                         <div className="text-xs flex items-center text-slate-400">
-                           <i className="fi fi-rr-calendar-clock mr-1"></i> {new Date(ver.timestamp * 1000).toLocaleString()}
+                           <i className="fi fi-rr-calendar-clock mr-1"></i> {new Date(ver.created_at).toLocaleString()}
                         </div>
                         <div className="text-xs mt-2 text-slate-500 capitalize">
-                           Trigger: {ver.reason || 'Manual Update'}
+                           Trigger: {ver.source || 'Manual Update'}
                         </div>
                      </div>
                    );
